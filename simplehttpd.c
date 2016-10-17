@@ -1,27 +1,47 @@
-/* 
- * -- simplehttpd.c --
- * A (very) simple HTTP server
- *
- * Sistemas Operativos 2014/2015
- */
+/********************************
+CODED BY ÃO OLIVEIRA          *
+AND RUI"KOALA"GUSTAVO           *
+                                *
+ * -- simplehttpd.c --          *
+ * A (very) simple HTTP server  *
+ *                              *
+ * Sistemas Operativos 2016/2017*
+ ********************************/
 
+#include <unistd.h>
+#include <signal.h>
 #include <stdio.h>
-#include <sys/types.h> 
+#include <stdlib.h>
+#include <errno.h>
+#include <time.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/shm.h>
+#include <semaphore.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <string.h>
 #include <signal.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <time.h>
+#include <pthread.h>
 
 // Produce debug information
-#define DEBUG	  	1	
+#define DEBUG	  	1
 
-// Header of HTTP reply to client 
+// Header of HTTP reply to client
 #define	SERVER_STRING 	"Server: simpleserver/0.1.0\r\n"
 #define HEADER_1	"HTTP/1.0 200 OK\r\n"
 #define HEADER_2	"Content-Type: text/html\r\n\r\n"
@@ -41,12 +61,31 @@ void execute_script(int socket);
 void not_found(int socket);
 void catch_ctrlc(int);
 void cannot_execute(int socket);
+void init();
 
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
 int port,socket_conn,new_conn;
 
+int shmid;
+pthread_t *child_threads;
+
+//estrutura para a pool de threads
+typedef struct pool{
+  int threads_id;
+}thread;
+
+
+// estrutura de config
+typedef struct {
+  int n_threads;
+  int server_port;
+  char scheduling[20]; //tipo de schedule - estatico ou comprimido
+  char file_list[50]; //lista de ficheiros
+}configs;
+
+configs *memShared;
 
 int main(int argc, char ** argv)
 {
@@ -54,8 +93,21 @@ int main(int argc, char ** argv)
 	socklen_t client_name_len = sizeof(client_name);
 	int port;
 
+  init();
 	signal(SIGINT,catch_ctrlc);
 
+
+  if(fork()==0){
+    //gestorConfig();
+    //sem_post(config);
+    //sem_post(config);
+    exit(0);
+  }
+  if(fork()==0){
+    //sem_wait(config);
+    //gestorEstatistica();
+    exit(0);
+  }
 	// Verify number of arguments
 	if (argc!=2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -68,7 +120,7 @@ int main(int argc, char ** argv)
 	if ((socket_conn=fireup(port))==-1)
 		exit(1);
 
-	// Serve requests 
+	// Serve requests
 	while (1)
 	{
 		// Accept connection on socket
@@ -85,16 +137,44 @@ int main(int argc, char ** argv)
 
 		// Verify if request is for a page or script
 		if(!strncmp(req_buf,CGI_EXPR,strlen(CGI_EXPR)))
-			execute_script(new_conn);	
+			execute_script(new_conn);
 		else
 			// Search file with html page and send to client
 			send_page(new_conn);
-	
-		// Terminate connection with client 
+
+		// Terminate connection with client
 		close(new_conn);
 
 	}
 
+}
+
+void *temp_func(int my_id){
+  while(1){
+    printf("Hello, i'm thread %d\n", my_id);
+    sleep(5);
+  }
+}
+void init(){
+  //alocar espaço de memoria partilhada
+  shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
+  // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
+  memShared = (configs*) shmat(shmid, NULL, 0);
+  /*le ficheiro */
+  //carregarConfig();
+  memShared->n_threads = 5;
+
+  /*criação da pool de threads */
+  int *threads_id, i;
+  child_threads = malloc((int)memShared->n_threads*sizeof(int));
+  threads_id = malloc((int)memShared->n_threads*sizeof(int));
+
+  for(i = 0; i < (int)memShared ->n_threads; i++){
+    threads_id[i] = i+1;
+    //mudar o nome da funçao das threads depois -> temp_func
+    pthread_create(&child_threads[i],NULL,temp_func,threads_id[i]);
+  }
+  exit(0);
 }
 
 // Processes request from client
@@ -114,9 +194,9 @@ void get_request(int socket)
 				req_buf[j++]=buf[i++];
 			req_buf[j]='\0';
 		}
-	}	
+	}
 
-	// Currently only supports GET 
+	// Currently only supports GET
 	if(!found_get) {
 		printf("Request from client without a GET\n");
 		exit(1);
@@ -155,7 +235,7 @@ void execute_script(int socket)
 {
 	// Currently unsupported, return error code to client
 	cannot_execute(socket);
-	
+
 	return;
 }
 
@@ -179,20 +259,20 @@ void send_page(int socket)
 		not_found(socket);
 	}
 	else {
-		// Page found, send to client 
-	
+		// Page found, send to client
+
 		// First send HTTP header back to client
 		send_header(socket);
 
 		printf("send_page: sending page %s to client\n",buf_tmp);
 		while(fgets(buf_tmp,SIZE_BUF,fp))
 			send(socket,buf_tmp,strlen(buf_tmp),0);
-		
+
 		// Close file
 		fclose(fp);
 	}
 
-	return; 
+	return;
 
 }
 
@@ -221,10 +301,10 @@ void identify(int socket)
 
 
 // Reads a line (of at most 'n' bytes) from socket
-int read_line(int socket,int n) 
-{ 
+int read_line(int socket,int n)
+{
 	int n_read;
-	int not_eol; 
+	int not_eol;
 	int ret;
 	char new_char;
 
@@ -245,7 +325,7 @@ int read_line(int socket,int n)
 			// consumes next byte on buffer (LF)
 			read(socket,&new_char,sizeof(char));
 			continue;
-		}		
+		}
 		else {
 			buf[n_read]=new_char;
 			n_read++;
@@ -256,7 +336,7 @@ int read_line(int socket,int n)
 	#if DEBUG
 	printf("read_line: new line read from client socket: %s\n",buf);
 	#endif
-	
+
 	return n_read;
 }
 
@@ -273,7 +353,7 @@ int fireup(int port)
 		return -1;
 	}
 
-	// Binds new socket to listening port 
+	// Binds new socket to listening port
  	name.sin_family = AF_INET;
  	name.sin_port = htons(port);
  	name.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -287,7 +367,7 @@ int fireup(int port)
 		printf("Error listening to socket\n");
 		return -1;
 	}
- 
+
 	return(new_sock);
 }
 

@@ -62,8 +62,11 @@ void execute_script(int socket);
 void not_found(int socket);
 void catch_ctrlc(int);
 void cannot_execute(int socket);
+
 void init();
 void reader_pipe();
+void cleanup();
+
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
@@ -77,7 +80,6 @@ typedef struct pool{
   int threads_id;
 }thread;
 
-
 // estrutura de config
 typedef struct {
   int n_threads;
@@ -86,10 +88,25 @@ typedef struct {
   char file_list[50]; //lista de ficheiros
 }configs;
 
-configs *memShared;
+//estrutura das estatisticas
+typedef struct{
+	char request_type[20];
+	char file_name[50];
+	int thread_ans; //thread que responde
+	char t_reception; //hora de recepção
+	char t_sent; // hora de envio
+}statistic;
+statistic *memShared;
 
-int main(int argc, char ** argv)
-{
+//estrutura dos pedidos
+typedef struct{
+	short t_request; // tipo de pedido 1 ou 2
+	char requested_file[SIZE_BUF];
+	int socket;
+	statistic stat;
+}request;
+
+int main(int argc, char ** argv){
 	struct sockaddr_in client_name;
 	socklen_t client_name_len = sizeof(client_name);
 	int port;
@@ -97,7 +114,7 @@ int main(int argc, char ** argv)
   init();
 	signal(SIGINT,catch_ctrlc);
 
-	reader_pipe();
+
   if(fork()==0){
     //gestorConfig();
     //sem_post(config);
@@ -147,25 +164,6 @@ int main(int argc, char ** argv)
 		close(new_conn);
 
 	}
-
-}
-
-void *temp_func(int my_id){
-  while(1){
-    printf("Hello, i'm thread %d\n", my_id);
-    sleep(5);
-  }
-}
-void reader_pipe(){
-	  int fd;
-    char * myfifo = "/tmp/myfifo";
-    char buf[MAX_BUF];
-
-    /* open, read, and display the message from the FIFO */
-    fd = open(myfifo, O_RDONLY);
-    read(fd, buf, MAX_BUF);
-    printf("Received: %s\n", buf);
-    close(fd);
 }
 
 void init(){
@@ -189,6 +187,37 @@ void init(){
   }
   exit(0);
 }
+//TODO: aguardar que a  lista de pedidos seja tratada
+void catch_ctrlc(int sig){
+	printf("Server terminating\n");
+	free(pool);
+	destroiLista(memShared->configurations);
+	shmctl(shmid, IPC_RMID, NULL);
+	close(memShared->socket_conn);
+	exit(0);
+}
+
+/*função da worker thread*/
+void *temp_func(int my_id){
+  while(1){
+    printf("Hello, i'm thread %d\n", my_id);
+    reader_pipe();
+    sleep(5);
+  }
+}
+/*leitura do namedpipe*/
+void reader_pipe(){
+	  int fd;
+    char * myfifo = "/tmp/myfifo";
+    char buf[MAX_BUF];
+
+    /* open, read, and display the message from the FIFO */
+    fd = open(myfifo, O_RDONLY);
+    read(fd, buf, MAX_BUF);
+    printf("Received: %s\n", buf);
+    close(fd);
+}
+
 
 // Processes request from client
 void get_request(int socket)

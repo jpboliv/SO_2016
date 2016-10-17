@@ -1,5 +1,5 @@
 /********************************
-CODED BY ÃO OLIVEIRA          *
+CODED BY JOÃO OLIVEIRA          *
 AND RUI"KOALA"GUSTAVO           *
                                 *
  * -- simplehttpd.c --          *
@@ -50,6 +50,7 @@ AND RUI"KOALA"GUSTAVO           *
 #define CGI_EXPR	"cgi-bin/"
 #define SIZE_BUF	1024
 
+#define MAX_BUF 1024
 
 int  fireup(int port);
 void identify(int socket);
@@ -62,7 +63,7 @@ void not_found(int socket);
 void catch_ctrlc(int);
 void cannot_execute(int socket);
 void init();
-
+void reader_pipe();
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
@@ -96,7 +97,7 @@ int main(int argc, char ** argv)
   init();
 	signal(SIGINT,catch_ctrlc);
 
-
+	reader_pipe();
   if(fork()==0){
     //gestorConfig();
     //sem_post(config);
@@ -155,6 +156,18 @@ void *temp_func(int my_id){
     sleep(5);
   }
 }
+void reader_pipe(){
+	  int fd;
+    char * myfifo = "/tmp/myfifo";
+    char buf[MAX_BUF];
+
+    /* open, read, and display the message from the FIFO */
+    fd = open(myfifo, O_RDONLY);
+    read(fd, buf, MAX_BUF);
+    printf("Received: %s\n", buf);
+    close(fd);
+}
+
 void init(){
   //alocar espaço de memoria partilhada
   shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);

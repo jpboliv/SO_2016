@@ -85,8 +85,9 @@ typedef struct {
   int n_threads;
   int server_port;
   char scheduling[20]; //tipo de schedule - estatico ou comprimido
-  char file_list[50]; //lista de ficheiros
+  char file_list[50][50]; //lista de ficheiros
 }configs;
+configs *teste;
 
 //estrutura das estatisticas
 typedef struct{
@@ -216,6 +217,60 @@ void reader_pipe(){
     read(fd, buf, MAX_BUF);
     printf("Received: %s\n", buf);
     close(fd);
+}
+
+/*CARREGAMENTO DO FICHEIRO CONFIG*/
+void carregarConfig(){
+
+
+	FILE *fp;
+    char buffer[1024];
+    char *search = " = ; \n";
+    char *token;
+    int j = 0;
+ 	teste = malloc(sizeof *teste);
+    if((fp = fopen("config.txt", "r")) == NULL){
+        perror("Erro a ler o ficheiro.\n");
+    }
+    else{
+        int i=0;
+        for(i = 0; i < 4; i++) {
+            fgets(buffer, sizeof(buffer), fp);
+            if (i == 0){
+                token = strtok(buffer, search);
+                token = strtok(NULL, search);
+                teste -> server_port = atoi(token);
+                //printf("%s",token);
+            }
+            else if (i == 1){
+                token = strtok(buffer, search);
+                token = strtok(NULL, search);
+                strcpy(teste->scheduling, token);
+                //printf("%s",token);
+                
+            }
+            else if (i == 2){
+                token = strtok(buffer, search);
+                token = strtok(NULL, search);
+                teste->n_threads = atoi(token);
+                //printf("%s",token);
+            }
+            else if (i == 3){
+                token = strtok(buffer, search);
+                token = strtok(NULL, search);
+                printf("%s",token);
+                while(token!=NULL) {
+                    strcpy(teste->file_list[j], token);
+                    //printf("%s",token);
+                    j++;
+                    token = strtok(NULL, search);
+                }
+            }
+        }
+        
+        fclose(fp);
+        
+    }
 }
 
 

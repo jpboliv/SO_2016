@@ -66,6 +66,7 @@ void cannot_execute(int socket);
 void init();
 void reader_pipe();
 void cleanup();
+void *temp_func(int my_id);
 
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
@@ -171,17 +172,17 @@ void init(){
   //alocar espaço de memoria partilhada
   shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
-  memShared = (configs*) shmat(shmid, NULL, 0);
+  teste = (configs*) shmat(shmid, NULL, 0);
   /*le ficheiro */
   //carregarConfig();
-  memShared->n_threads = 5;
+  teste->n_threads = 5;
 
   /*criação da pool de threads */
   int *threads_id, i;
-  child_threads = malloc((int)memShared->n_threads*sizeof(int));
-  threads_id = malloc((int)memShared->n_threads*sizeof(int));
+  child_threads = malloc((int)teste->n_threads*sizeof(int));
+  threads_id = malloc((int)teste->n_threads*sizeof(int));
 
-  for(i = 0; i < (int)memShared ->n_threads; i++){
+  for(i = 0; i < (int)teste ->n_threads; i++){
     threads_id[i] = i+1;
     //mudar o nome da funçao das threads depois -> temp_func
     pthread_create(&child_threads[i],NULL,temp_func,threads_id[i]);
@@ -191,10 +192,10 @@ void init(){
 //TODO: aguardar que a  lista de pedidos seja tratada
 void catch_ctrlc(int sig){
 	printf("Server terminating\n");
-	free(pool);
-	destroiLista(memShared->configurations);
+	free(child_threads); //FALTA DAR FREE À POOL DE THREADS
+	//destroiLista(teste->configurations);
 	shmctl(shmid, IPC_RMID, NULL);
-	close(memShared->socket_conn);
+	close(socket_conn);
 	exit(0);
 }
 
@@ -247,7 +248,7 @@ void carregarConfig(){
                 token = strtok(NULL, search);
                 strcpy(teste->scheduling, token);
                 //printf("%s",token);
-                
+
             }
             else if (i == 2){
                 token = strtok(buffer, search);
@@ -267,9 +268,9 @@ void carregarConfig(){
                 }
             }
         }
-        
+
         fclose(fp);
-        
+
     }
 }
 
@@ -505,7 +506,7 @@ void cannot_execute(int socket)
 
 	return;
 }
-
+/*
 
 // Closes socket before closing
 void catch_ctrlc(int sig)
@@ -514,4 +515,4 @@ void catch_ctrlc(int sig)
 	close(socket_conn);
 	exit(0);
 }
-
+*/

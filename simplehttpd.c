@@ -172,10 +172,10 @@ int main(int argc){
 void *scheduleThreads()
 {
 	int n,nThreads=1;
-
+  int *threads_id;
 	while(1)
 	{
-		
+
 		if(nThreads!= teste->n_threads)
 		{
 			nThreads=(int)teste->n_threads;
@@ -201,7 +201,6 @@ void init(){
   /*le ficheiro */
   carregarConfig();
 
-  /**/
   pthread_t scheduler;
 
 //Criar thread scheduler, e posteriormente a pool de threads

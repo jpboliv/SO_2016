@@ -67,6 +67,7 @@ void init();
 void reader_pipe();
 void cleanup();
 void *temp_func(int my_id);
+void carregarConfig();
 
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
@@ -108,7 +109,7 @@ typedef struct{
 	statistic stat;
 }request;
 
-int main(int argc, char ** argv){
+int main(int argc){
 	struct sockaddr_in client_name;
 	socklen_t client_name_len = sizeof(client_name);
 	int port;
@@ -116,24 +117,23 @@ int main(int argc, char ** argv){
   init();
 	signal(SIGINT,catch_ctrlc);
 
-
   if(fork()==0){
+    printf("Criar processos de gestor de configurações: \n");
     //gestorConfig();
-    //sem_post(config);
-    //sem_post(config);
-    exit(0);
+    //exit(0);
   }
   if(fork()==0){
-    //sem_wait(config);
+    printf("Criar processos de gestor de estatísticas: \n");
     //gestorEstatistica();
-    exit(0);
+    //exit(0);
   }
 	// Verify number of arguments
-	if (argc!=2) {
+	/*if (argc!=2) {
 		printf("Usage: %s <port>\n",argv[0]);
 		exit(1);
-	}
-	port=atoi(argv[1]);
+	}*/
+	//port=atoi(argv[1]);
+  port=teste->server_port;
 	printf("Listening for HTTP requests on port %d\n",port);
 
 	// Configure listening port
@@ -175,8 +175,7 @@ void init(){
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
   teste = (configs*) shmat(shmid, NULL, 0);
   /*le ficheiro */
-  //carregarConfig();
-  teste->n_threads = 5;
+  carregarConfig();
 
   /*criação da pool de threads */
   int *threads_id, i;
@@ -190,7 +189,8 @@ void init(){
       printf("Error at creating threads");
     }
   }
-  exit(0);
+  //printf("NUmeros de thread:%d \n Tipo de coiso:%s \n Server-Porto:%d \n File1: %s \n File2:%s",teste->n_threads,teste->scheduling,teste->server_port,teste->file_list[0],teste->file_list[1]);
+  //exit(0);
 }
 //TODO: aguardar que a  lista de pedidos seja tratada
 void catch_ctrlc(int sig){
@@ -262,7 +262,7 @@ void carregarConfig(){
             else if (i == 3){
                 token = strtok(buffer, search);
                 token = strtok(NULL, search);
-                printf("%s",token);
+                //printf("%s",token);
                 while(token!=NULL) {
                     strcpy(teste->file_list[j], token);
                     //printf("%s",token);

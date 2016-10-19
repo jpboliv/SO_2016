@@ -170,9 +170,8 @@ int main(int argc, char ** argv){
 
 void init(){
   //alocar espaço de memoria partilhada
-  if(shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777) == -1){
-    printf("Error at shmget\n");
-  }
+  shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
+
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
   teste = (configs*) shmat(shmid, NULL, 0);
   /*le ficheiro */

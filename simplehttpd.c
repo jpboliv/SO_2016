@@ -68,6 +68,7 @@ void reader_pipe();
 void cleanup();
 void *temp_func(int my_id);
 void carregarConfig();
+void *scheduleThreads();
 
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
@@ -168,7 +169,7 @@ int main(int argc){
 	}
 }
 
-void *scheduleBuffer()
+void *scheduleThreads()
 {
 	int n,nThreads=1;
 

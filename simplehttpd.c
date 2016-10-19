@@ -170,7 +170,9 @@ int main(int argc, char ** argv){
 
 void init(){
   //alocar espaço de memoria partilhada
-  shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
+  if(shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777) == -1){
+    printf("Error at shmget\n");
+  }
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
   teste = (configs*) shmat(shmid, NULL, 0);
   /*le ficheiro */
@@ -185,7 +187,9 @@ void init(){
   for(i = 0; i < (int)teste ->n_threads; i++){
     threads_id[i] = i+1;
     //mudar o nome da funçao das threads depois -> temp_func
-    pthread_create(&child_threads[i],NULL,temp_func,threads_id[i]);
+    if(pthread_create(&child_threads[i],NULL,temp_func,threads_id[i])!=0){
+      printf("Error at creating threads");
+    }
   }
   exit(0);
 }

@@ -174,15 +174,18 @@ void *masterthread(){
   child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
   int i;
   for(i =0; i < n_threads; i++){
-    pthread_create(&child_threads, NULL, temp_func, (void* )i);
+    pthread_create(&child_threads[i], NULL, temp_func, (void* )i);
   }
   while(1){
     if(n_threads != teste->n_threads){
       numthreads=teste->n_threads;
+      //free(child_threads);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
-      free(child_threads);
       for(i =0; i < numthreads; i++){
-        pthread_create(&child_threads, NULL, temp_func, (void* )i);
+        pthread_create(&child_threads[i], NULL, temp_func, (void* )i);
+      }
+      for(i =0; i < numthreads; i++){
+        pthread_join(&child_threads[i], NULL);
       }
     }
   }
@@ -222,6 +225,7 @@ void catch_ctrlc(int sig){
 void *temp_func(int my_id){
   while(1){
     printf("Hello, i'm thread %d\n", my_id);
+    //reader_pipe();
     sleep(5);
   }
 }

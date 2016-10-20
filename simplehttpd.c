@@ -68,7 +68,7 @@ void reader_pipe();
 void cleanup();
 void *temp_func(int my_id);
 void carregarConfig();
-
+void *masterthread();
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
@@ -168,9 +168,29 @@ int main(int argc){
 	}
 }
 
+void *masterthread(){
+  int n_threads=1;
+  int numthreads;
+  child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
+  int i;
+  for(i =0; i < n_threads; i++){
+    pthread_create(&child_threads, NULL, temp_func, (void* )i);
+  }
+  while(1){
+    if(n_threads != teste->n_threads){
+      numthreads=teste->n_threads;
+      child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
+      free(child_threads);
+      for(i =0; i < numthreads; i++){
+        pthread_create(&child_threads, NULL, temp_func, (void* )i);
+      }
+    }
+  }
+}
 
 void init(){
   //alocar espaço de memoria partilhada
+  pthread_t scheduler;
   shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
 
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
@@ -181,17 +201,8 @@ void init(){
 
   /*criação da pool de threads */
   int *threads_id, i;
-  child_threads = malloc((int)teste->n_threads*sizeof(int));
-  threads_id = malloc((int)teste->n_threads*sizeof(int));
 
-  for(i = 0; i < (int)teste ->n_threads; i++){
-    threads_id[i] = i+1;
-    //mudar o nome da funçao das threads depois -> temp_func
-    if(pthread_create(&child_threads[i],NULL,temp_func,threads_id[i])!=0){
-      printf("Error at creating threads");
-    }
-  }
-
+  pthread_create(&scheduler, NULL, masterthread, NULL);
   //printf("NUmeros de thread:%d \n Tipo de coiso:%s \n Server-Porto:%d \n File1: %s \n File2:%s",teste->n_threads,teste->scheduling,teste->server_port,teste->file_list[0],teste->file_list[1]);
   //exit(0);
 }
@@ -211,7 +222,6 @@ void catch_ctrlc(int sig){
 void *temp_func(int my_id){
   while(1){
     printf("Hello, i'm thread %d\n", my_id);
-    //reader_pipe();
     sleep(5);
   }
 }

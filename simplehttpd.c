@@ -77,6 +77,7 @@ int port,socket_conn,new_conn;
 
 int shmid;
 pthread_t *child_threads;
+pthread_t *scheduler;
 
 //estrutura para a pool de threads
 typedef struct pool{
@@ -141,7 +142,7 @@ int main(int argc){
 	if ((socket_conn=fireup(port))==-1)
 		exit(1);
 
-	// Serve requests
+	// Server requests
 	while (1)
 	{
 		// Accept connection on socket
@@ -186,7 +187,7 @@ void *scheduleThreads()
 			{
 				if(pthread_create(&child_threads[n],NULL,temp_func,threads_id[n])!=0){
       				printf("Error at creating threads");
-    			}
+      	}
 			}
 		}
 	}
@@ -201,10 +202,10 @@ void init(){
   /*le ficheiro */
   carregarConfig();
 
-  pthread_t scheduler;
-
 //Criar thread scheduler, e posteriormente a pool de threads
-	pthread_create(&scheduler,NULL,scheduleThreads,NULL);
+	if(pthread_create(&scheduler,NULL,scheduleThreads,NULL)!=0){
+    printf("Error at creating main thread\n");
+  }
 
   /*criação da pool de threads */
   int *threads_id, i;
@@ -219,7 +220,9 @@ void catch_ctrlc(int sig){
 	printf("Server terminating\n");
 	free(child_threads); //FALTA DAR FREE À POOL DE THREADS
 	//destroiLista(teste->configurations);
-	shmctl(shmid, IPC_RMID, NULL);
+	if(shmctl(shmid, IPC_RMID, NULL) < 0){
+    printf("Error at shmctl\n");
+  }
 	close(socket_conn);
 	exit(0);
 }

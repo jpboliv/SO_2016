@@ -170,16 +170,18 @@ int main(int argc){
 
 void *masterthread(){
   int n_threads=1;
-  int numthreads;
-  child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
-  int i;
-  for(i =0; i < n_threads; i++){
-    pthread_create(&child_threads[i], NULL, temp_func, (void* )i);
-  }
-  while(1){
+  int numthreads, i;
+  /*
+  free(child_threads);
+  child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));*/
+  /*for(i =0; i < n_threads; i++){
+    if(pthread_create(&child_threads[i], NULL, temp_func, (void* )i) !=0) {
+      printf("Error at pthread_create 1\n");
+    }
+  }*/
     if(n_threads != teste->n_threads){
       numthreads=teste->n_threads;
-      //free(child_threads);
+      free(child_threads);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
       for(i =0; i < numthreads; i++){
         pthread_create(&child_threads[i], NULL, temp_func, (void* )i);
@@ -188,31 +190,36 @@ void *masterthread(){
         pthread_join(&child_threads[i], NULL);
       }
     }
-  }
 }
 
 void init(){
   //alocar espaço de memoria partilhada
-  pthread_t scheduler;
   shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
 
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
   teste = (configs*) shmat(shmid, NULL, 0);
+
   /*le ficheiro */
   carregarConfig();
 
-
   /*criação da pool de threads */
   int *threads_id, i;
+  pthread_t scheduler;
 
   pthread_create(&scheduler, NULL, masterthread, NULL);
+
   //printf("NUmeros de thread:%d \n Tipo de coiso:%s \n Server-Porto:%d \n File1: %s \n File2:%s",teste->n_threads,teste->scheduling,teste->server_port,teste->file_list[0],teste->file_list[1]);
   //exit(0);
 }
+
 //TODO: aguardar que a  lista de pedidos seja tratada
 void catch_ctrlc(int sig){
 	printf("Server terminating\n");
-	free(child_threads); //FALTA DAR FREE À POOL DE THREADS
+  //testing cleanup
+  free(child_threads);
+  pthread_exit(&masterthread);
+  pthread_exit(&child_threads);
+
 	//destroiLista(teste->configurations);
 	if(shmctl(shmid, IPC_RMID, NULL) < 0){
     printf("Error at shmctl\n");

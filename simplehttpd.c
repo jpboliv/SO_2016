@@ -81,6 +81,7 @@ void execute_script(int socket);
 void not_found(int socket);
 void catch_ctrlc(int);
 void cannot_execute(int socket);
+void retira_paragrafo(char *linha);
 
 void init();
 void reader_pipe();
@@ -120,7 +121,7 @@ typedef struct{
 	char request_type[20];
 	char file_name[50];
 	int thread_ans; //thread que responde
-	char t_reception; //hora de recepção
+	char t_reception[20]; //hora de recepção
 	char t_sent; // hora de envio
 }statistic;
 statistic *memShared;
@@ -142,17 +143,17 @@ int main(int argc){
   init();
   queue = malloc(sizeof(request)*2*teste->n_threads);
 	signal(SIGINT,catch_ctrlc);
-/*
+
   if(fork()==0){
     printf("Criar processos de gestor de configurações: \n");
     //gestorConfig();
-    //exit(0);
+    exit(0);
   }
   if(fork()==0){
     printf("Criar processos de gestor de estatísticas: \n");
     //gestorEstatistica();
-    //exit(0);
-  }*/
+    exit(0);
+  }
 	// Verify number of arguments
 	/*if (argc!=2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -255,7 +256,8 @@ void catch_ctrlc(int sig){
   pthread_exit(&child_threads);
   free(child_threads);
 
-	//destroiLista(teste->configurations);
+  	//limpar estatsticas
+	shmdt(memShared);
 	if(shmctl(shmid, IPC_RMID, NULL) < 0){
     printf("Error at shmctl\n");
   }
@@ -372,10 +374,10 @@ void get_request(int socket)
 	#if DEBUG
 	printf("get_request: client requested the following page: %s\n",req_buf);
 	#endif
-	printf("DEBUG: ESTOU ANTES DO time and shit\n");
+
 	time ( &rawtime );
 	timeinfo = localtime ( &rawtime );
-	printf("DEBUG: ESTOU ANTES DO FOR\n");
+
 	for (i=0;i<2*teste->n_threads;i++){
 		if(queue[i].t_request==0){
 			if(!strncmp(req_buf,CGI_EXPR,strlen(CGI_EXPR))){
@@ -384,15 +386,14 @@ void get_request(int socket)
 			else{
 				queue[i].t_request = 1;
 			}
-			strcpy(queue[i].stat.request_type,asctime (timeinfo));
+			strcpy(queue[i].stat.t_reception,asctime (timeinfo));
 			strcpy(queue[i].requested_file,req_buf);
 			queue[i].socket=socket;
 			printf("DEBUG:Printing queue:%s\n",queue[i].requested_file);
+			printf("DEBUG:Printing file type:%d\n 1- Estatico 2- Dina \n",queue[i].t_request);
+			printf("DEBUG:Printing hora de recepção do pedido %s\n",queue[i].stat.t_reception);
 			return;
 		}
-	}
-	for(i=0;i<2*teste->n_threads;i++){
-		printf("DEBUG:Printing queue:%d\n",queue[i].t_request);
 	}
 		return;
 }
@@ -592,6 +593,16 @@ void cannot_execute(int socket)
 	send(socket,buf, strlen(buf), 0);
 
 	return;
+}
+
+
+void retira_paragrafo(char *linha)
+{
+	unsigned int len = strlen(linha);
+	if(linha[len-1]=='\n')
+	{
+		linha[len-1]='\0';
+	}
 }
 /*
 

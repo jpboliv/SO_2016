@@ -37,6 +37,25 @@ AND RUI"KOALA"GUSTAVO           *
 #include <fcntl.h>
 #include <time.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <pthread.h>
+#include <sys/ipc.h> 
+#include <sys/types.h>
+#include <sys/msg.h>
+#include <sys/shm.h>
+#include <sys/fcntl.h>
+#include <semaphore.h>
 
 // Produce debug information
 #define DEBUG	  	1
@@ -69,10 +88,15 @@ void cleanup();
 void *temp_func(int my_id);
 void carregarConfig();
 void *masterthread();
+
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
 int port,socket_conn,new_conn;
+time_t rawtime;
+struct tm * timeinfo;
+time_t timeServer;
+struct tm * timeServInfo;
 
 int shmid;
 pthread_t *child_threads;
@@ -109,12 +133,14 @@ typedef struct{
 	statistic stat;
 }request;
 
+request *queue;
+
 int main(int argc){
 	struct sockaddr_in client_name;
 	socklen_t client_name_len = sizeof(client_name);
 	int port;
-
   init();
+  queue = malloc(sizeof(request)*2*teste->n_threads);
 	signal(SIGINT,catch_ctrlc);
 /*
   if(fork()==0){
@@ -346,8 +372,29 @@ void get_request(int socket)
 	#if DEBUG
 	printf("get_request: client requested the following page: %s\n",req_buf);
 	#endif
-
-	return;
+	printf("DEBUG: ESTOU ANTES DO time and shit\n");
+	time ( &rawtime );
+	timeinfo = localtime ( &rawtime );
+	printf("DEBUG: ESTOU ANTES DO FOR\n");
+	for (i=0;i<2*teste->n_threads;i++){
+		if(queue[i].t_request==0){
+			if(!strncmp(req_buf,CGI_EXPR,strlen(CGI_EXPR))){
+				queue[i].t_request=2;
+			}
+			else{
+				queue[i].t_request = 1;
+			}
+			strcpy(queue[i].stat.request_type,asctime (timeinfo));
+			strcpy(queue[i].requested_file,req_buf);
+			queue[i].socket=socket;
+			printf("DEBUG:Printing queue:%s\n",queue[i].requested_file);
+			return;
+		}
+	}
+	for(i=0;i<2*teste->n_threads;i++){
+		printf("DEBUG:Printing queue:%d\n",queue[i].t_request);
+	}
+		return;
 }
 
 

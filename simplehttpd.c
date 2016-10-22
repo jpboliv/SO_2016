@@ -116,7 +116,7 @@ int main(int argc){
 
   init();
 	signal(SIGINT,catch_ctrlc);
-
+/*
   if(fork()==0){
     printf("Criar processos de gestor de configurações: \n");
     //gestorConfig();
@@ -126,7 +126,7 @@ int main(int argc){
     printf("Criar processos de gestor de estatísticas: \n");
     //gestorEstatistica();
     //exit(0);
-  }
+  }*/
 	// Verify number of arguments
 	/*if (argc!=2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -186,9 +186,7 @@ void *masterthread(){
       for(i =0; i < numthreads; i++){
         pthread_create(&child_threads[i], NULL, temp_func, (void* )i);
       }
-      for(i =0; i < numthreads; i++){
-        pthread_join(&child_threads[i], NULL);
-      }
+      
     }
 }
 
@@ -216,9 +214,20 @@ void init(){
 void catch_ctrlc(int sig){
 	printf("Server terminating\n");
   //testing cleanup
-  free(child_threads);
+	int i;
+  
+
+	for(i=0;i<teste->n_threads;i++){
+    	pthread_cancel(child_threads[i]);
+    	printf("A fechar a thread %d \n", i);
+  	}
+
+  for( i =0; i < teste->n_threads; i++){
+        pthread_join(child_threads[i], NULL);
+      }
   pthread_exit(&masterthread);
   pthread_exit(&child_threads);
+  free(child_threads);
 
 	//destroiLista(teste->configurations);
 	if(shmctl(shmid, IPC_RMID, NULL) < 0){
@@ -235,6 +244,7 @@ void *temp_func(int my_id){
     //reader_pipe();
     sleep(5);
   }
+  pthread_exit(NULL);
 }
 /*leitura do namedpipe*/
 void reader_pipe(){
@@ -309,7 +319,7 @@ void get_request(int socket)
 {
 	int i,j;
 	int found_get;
-
+	printf("DEBUG:Sou o socket:%d\n",socket);
 	found_get=0;
 	while ( read_line(socket,SIZE_BUF) > 0 ) {
 		if(!strncmp(buf,GET_EXPR,strlen(GET_EXPR))) {
@@ -328,6 +338,7 @@ void get_request(int socket)
 		printf("Request from client without a GET\n");
 		exit(1);
 	}
+	printf("SOU EU A PAGINA:%s\n",req_buf);
 	// If no particular page is requested then we consider htdocs/index.html
 	if(!strlen(req_buf))
 		sprintf(req_buf,"index.html");

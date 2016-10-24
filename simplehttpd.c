@@ -87,7 +87,7 @@ void *masterthread(){
       free(child_threads);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
       for(i =0; i < numthreads; i++){
-        if(pthread_create(&child_threads[i], NULL, temp_func,(void *)i) == NULL){
+        if(pthread_create(&child_threads[i], NULL, temp_func,(void *)i) != 0){
           perror("Error at creating thread\n");
         }
       }
@@ -188,7 +188,7 @@ void carregarConfig(){
         int i=0;
         for(i = 0; i < 4; i++) {
           if(fgets(buffer, sizeof buffer, fp) == NULL)
-                printf("EOF or IO error getting port\n");
+          	printf("EOF or IO error getting port\n");
             if (i == 0){
                 token = strtok(buffer, search);
                 token = strtok(NULL, search);

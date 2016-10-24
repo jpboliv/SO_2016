@@ -15,38 +15,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <ctype.h>
-#include <signal.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <sys/mman.h>
-#include <fcntl.h>
-#include <time.h>
 #include <pthread.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/ipc.h>
-#include <sys/types.h>
 #include <sys/msg.h>
-#include <sys/shm.h>
-#include <sys/fcntl.h>
-#include <semaphore.h>
 
 // Produce debug information
 #define DEBUG	  	1

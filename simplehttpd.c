@@ -10,6 +10,7 @@ AND RUI"KOALA"GUSTAVO           *
 #include "header.h"
 #include <unistd.h>
 
+pthread_mutex_t count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc){
 	struct sockaddr_in client_name;
@@ -86,18 +87,23 @@ void *masterthread(){
       free(child_threads);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
       for(i =0; i < numthreads; i++){
-        pthread_create(&child_threads[i], NULL, temp_func,(void *)i);
+        if(pthread_create(&child_threads[i], NULL, temp_func,(void *)i) == NULL){
+          perror("Error at creating thread\n");
+        }
       }
-
     }
 }
 
 void init(){
   //alocar espaço de memoria partilhada
-  shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777);
+  if((shmid = shmget(IPC_PRIVATE, sizeof(configs), IPC_CREAT|0777)) <0 ) {
+    perror("Error at shmget\n");
+  }
 
   // mapeia espaço de memoria para espaço de endereçamento do ficheiro de config
-  teste = (configs*) shmat(shmid, NULL, 0);
+  if((teste = (configs*) shmat(shmid, NULL, 0)) < 0 ) {
+    perror("Error at shmat\n");
+  }
 
   /*le ficheiro */
   carregarConfig();
@@ -106,7 +112,9 @@ void init(){
   int *threads_id, i;
   pthread_t scheduler;
 
-  pthread_create(&scheduler, NULL, masterthread, NULL);
+  if(pthread_create(&scheduler, NULL, masterthread, NULL) == NULL){
+    perror("Error at creating master thread\n");
+  }
 
   //printf("NUmeros de thread:%d \n Tipo de coiso:%s \n Server-Porto:%d \n File1: %s \n File2:%s",teste->n_threads,teste->scheduling,teste->server_port,teste->file_list[0],teste->file_list[1]);
   //exit(0);
@@ -179,7 +187,8 @@ void carregarConfig(){
     else{
         int i=0;
         for(i = 0; i < 4; i++) {
-            fgets(buffer, sizeof(buffer), fp);
+          if(fgets(buffer, sizeof buffer, fp) == NULL)
+                printf("EOF or IO error getting port\n");
             if (i == 0){
                 token = strtok(buffer, search);
                 token = strtok(NULL, search);

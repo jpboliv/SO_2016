@@ -38,7 +38,7 @@ AND RUI"KOALA"GUSTAVO           *
 #include <time.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -50,7 +50,7 @@ AND RUI"KOALA"GUSTAVO           *
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
-#include <sys/ipc.h> 
+#include <sys/ipc.h>
 #include <sys/types.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
@@ -121,8 +121,8 @@ typedef struct{
 	char request_type[20];
 	char file_name[50];
 	int thread_ans; //thread que responde
-	char t_reception[20]; //hora de recepção
-	char t_sent; // hora de envio
+	char t_reception[50]; //hora de recepção
+	char t_sent[20]; // hora de envio
 }statistic;
 statistic *memShared;
 
@@ -213,7 +213,7 @@ void *masterthread(){
       for(i =0; i < numthreads; i++){
         pthread_create(&child_threads[i], NULL, temp_func, (void* )i);
       }
-      
+
     }
 }
 
@@ -242,7 +242,7 @@ void catch_ctrlc(int sig){
 	printf("Server terminating\n");
   //testing cleanup
 	int i;
-  
+
 
 	for(i=0;i<teste->n_threads;i++){
     	pthread_cancel(child_threads[i]);

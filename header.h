@@ -55,6 +55,9 @@ void *temp_func(void *t);
 void carregarConfig();
 void *masterthread();
 
+void organize_static();
+void organize_dynamic();
+
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
@@ -67,6 +70,8 @@ struct tm * timeServInfo;
 int shmid;
 pthread_t *child_threads;
 
+int queue_aux =0; //número de elementos no buffer
+
 //estrutura para a pool de threads
 typedef struct pool{
   int threads_id;
@@ -76,7 +81,7 @@ typedef struct pool{
 typedef struct {
   int n_threads;
   int server_port;
-  char scheduling[20]; //tipo de schedule - estatico ou comprimido
+  int schedule_type; //tipo de schedule - 1 default (FIFO) - 2 para estatico - 3 para dinamico
   char file_list[50][50]; //lista de ficheiros
 }configs;
 configs *teste;

@@ -82,6 +82,9 @@ void *masterthread(){
       printf("Error at pthread_create 1\n");
     }
   }*/
+
+  /*NOT SURE ABOUT THIS WHILE 1*/
+  while(1){
     if(n_threads != teste->n_threads){
       numthreads=teste->n_threads;
       free(child_threads);
@@ -89,6 +92,42 @@ void *masterthread(){
       for(i =0; i < numthreads; i++){
         if(pthread_create(&child_threads[i], NULL, temp_func,(void *)i) != 0){
           perror("Error at creating thread\n");
+        }
+      }
+    }
+    /*SCHEDULE DA QUEUE*/
+    if(queue_aux > 0){ //quer dizer que existem elementos na queue
+      if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
+        organize_static();
+      }
+      else if(teste->schedule_type == 3 && queue_aux > 1){ //PRIORIDADE DINÂMICOS
+        organize_dynamic();
+      }
+    }
+  }
+}
+void organize_static(){
+  int i, n;
+  request tmp;
+  for (i = 1; i < queue_aux; i++){
+    for(n=0; n < queue_aux-1;n++){
+      if(queue[n].t_request > queue[n+1].t_request){
+        tmp = queue[n];
+        queue[n] = queue[n+1];
+        queue[n+1] = tmp;
+      }
+    }
+  }
+}
+void organize_dynamic(){
+  int i, n;
+  request tmp;
+    for(i=1;i<queue_aux;i++){
+      for(n=0;n<queue_aux-1;n++){
+        if(queue[n].t_request<queue[n+1].t_request){
+          tmp = queue[n];
+          queue[n] = queue[n+1];
+          queue[n+1]=tmp;
         }
       }
     }
@@ -126,15 +165,15 @@ void catch_ctrlc(int sig){
   //testing cleanup
 	int i;
 
-
+/*
 	for(i=0;i<teste->n_threads;i++){
     	pthread_cancel(child_threads[i]);
     	printf("A fechar a thread %d \n", i);
   	}
-
+*/
   for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
-      }
+  }
   pthread_exit(&masterthread);
   pthread_exit(&child_threads);
   free(child_threads);
@@ -151,13 +190,14 @@ void catch_ctrlc(int sig){
 /*função da worker thread*/
 void *temp_func(void *t){
 	long my_id = (long) t;
-  while(1){
+  //while(1){
     printf("Hello, i'm a thread %ld\n",my_id);
     //reader_pipe();
     sleep(5);
-  }
+  //}
   pthread_exit(NULL);
 }
+
 /*leitura do namedpipe*/
 void reader_pipe(){
 	  int fd;
@@ -198,7 +238,7 @@ void carregarConfig(){
             else if (i == 1){
                 token = strtok(buffer, search);
                 token = strtok(NULL, search);
-                strcpy(teste->scheduling, token);
+                strcpy(teste->schedule_type, token);
                 //printf("%s",token);
 
             }

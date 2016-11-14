@@ -30,6 +30,7 @@ int main(int argc){
     //gestorEstatistica();
     exit(0);
   }
+  //reader_pipe(); //talvez precise de ser chamada noutro sitio IMPORTANTE VER
 	// Verify number of arguments
 	/*if (argc!=2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -200,15 +201,37 @@ void *temp_func(void *t){
 
 /*leitura do namedpipe*/
 void reader_pipe(){
-	  int fd;
-    char * myfifo = "/tmp/myfifo";
-    char buf[MAX_BUF];
-
-    /* open, read, and display the message from the FIFO */
-    fd = open(myfifo, O_RDONLY);
-    read(fd, buf, MAX_BUF);
-    printf("Received: %s\n", buf);
-    close(fd);
+	int fd;
+	char buf[MAX_BUF];
+	char previous[50];
+	while(1){
+    	char * myfifo = "/tmp/myfifo2";
+		fd = open(myfifo, O_RDONLY);
+    	read(fd, buf, MAX_BUF);
+    	//printf("Received: %s\n", aux);
+    	if(strcmp(previous,buf)==0){
+    	}
+    	else{
+	    	if(strcmp(buf,"1+1")==0){
+	    		printf("Scheduling Normal\n");
+	    		teste->schedule_type = 1;
+	    		strcpy(previous,buf);
+	    	}
+	    	else if(strcmp(buf,"1+2")==0){
+	    		printf("Scheduling com prioridade aos pedidos estaticos\n");
+	    		teste->schedule_type = 2;
+	    		strcpy(previous,buf);
+	    	}
+	    	else if(strcmp(buf,"1+3")==0){
+	    		printf("Scheduling com prioridade aos pedidos dinamicos\n");
+	    		teste->schedule_type = 3;
+	    		strcpy(previous,buf);
+	    	}
+    	}
+    	close(fd);
+    }
+    	
+    return;
 }
 
 /*CARREGAMENTO DO FICHEIRO CONFIG*/

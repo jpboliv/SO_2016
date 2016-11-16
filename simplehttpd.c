@@ -85,7 +85,7 @@ void *masterthread(){
   }*/
 
   /*NOT SURE ABOUT THIS WHILE 1*/
-  while(1){
+  //while(1){
     if(n_threads != teste->n_threads){
       numthreads=teste->n_threads;
       free(child_threads);
@@ -97,15 +97,15 @@ void *masterthread(){
       }
     }
     /*SCHEDULE DA QUEUE*/
-    if(queue_aux > 0){ //quer dizer que existem elementos na queue
+   /* if(queue_aux > 0){ //quer dizer que existem elementos na queue
       if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
         organize_static();
       }
       else if(teste->schedule_type == 3 && queue_aux > 1){ //PRIORIDADE DINÂMICOS
         organize_dynamic();
       }
-    }
-  }
+    }*/
+  //}
 }
 void organize_static(){
   int i, n;
@@ -152,7 +152,7 @@ void init(){
   int *threads_id, i;
   pthread_t scheduler;
 
-  if(pthread_create(&scheduler, NULL, masterthread, NULL) == NULL){
+  if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
     perror("Error at creating master thread\n");
   }
 
@@ -201,33 +201,60 @@ void *temp_func(void *t){
 
 /*leitura do namedpipe*/
 void reader_pipe(){
-	int fd;
+	char *search = " + \n";
+    char aux[1024];
 	char buf[MAX_BUF];
+    int fd;
 	char previous[50];
+	char *token1;
+    char *token2;
 	while(1){
+		
     	char * myfifo = "/tmp/myfifo2";
 		fd = open(myfifo, O_RDONLY);
     	read(fd, buf, MAX_BUF);
+    	//printf("sou eu o buffer:%s\n",buf);
+    	strcpy(aux,buf);
     	//printf("Received: %s\n", aux);
     	if(strcmp(previous,buf)==0){
     	}
     	else{
-	    	if(strcmp(buf,"1+1")==0){
-	    		printf("Scheduling Normal\n");
-	    		teste->schedule_type = 1;
-	    		strcpy(previous,buf);
-	    	}
-	    	else if(strcmp(buf,"1+2")==0){
-	    		printf("Scheduling com prioridade aos pedidos estaticos\n");
-	    		teste->schedule_type = 2;
-	    		strcpy(previous,buf);
-	    	}
-	    	else if(strcmp(buf,"1+3")==0){
-	    		printf("Scheduling com prioridade aos pedidos dinamicos\n");
-	    		teste->schedule_type = 3;
-	    		strcpy(previous,buf);
-	    	}
-    	}
+    		token1 = strtok(aux,search);
+    		//printf("sou o manel:%s",token1);
+    		if(strcmp(token1,"1")==0){
+    				token2 = strtok(NULL,search);
+    				printf("sou o patricio:%s\n",token2);
+			    	if(strcmp(token2,"1")==0){
+			    		printf("Scheduling Normal\n");
+			    		//teste->schedule_type = 1;
+			    		strcpy(previous,buf);
+			    	}
+			    	else if(strcmp(token2,"2")==0){
+			    		printf("Scheduling com prioridade aos pedidos estaticos\n");
+			    		//teste->schedule_type = 2;
+			    		strcpy(previous,buf);
+			    	}
+			    	else if(strcmp(token2,"3")==0){
+			    		printf("Scheduling com prioridade aos pedidos dinamicos\n");
+			    		//teste->schedule_type = 3;
+			    		strcpy(previous,buf);
+			    	}
+		    }
+		    else if(strcmp(token1,"2")==0){
+    				token2 = strtok(NULL,search);
+    				printf("sou o patricio:%s\n",token2);
+			    	printf("Numero de threads novo:%s\n",token2);
+			    	//teste->n_threads = atoi(token2);//SUBSTITUI O NUMERO THREADS ANTIGA
+			    	strcpy(previous,buf);
+		    }
+		    else  if(strcmp(token1,"3")==0){
+    				token2 = strtok(NULL,search);
+    				printf("sou o patricio:%s\n",token2);
+			    	printf("Novo ficheiro permitido: %s\n",token2);
+			    	//strcpy(teste->file_list[j], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
+			   		strcpy(previous,buf);
+		    }
+	    }
     	close(fd);
     }
     	
@@ -261,7 +288,7 @@ void carregarConfig(){
             else if (i == 1){
                 token = strtok(buffer, search);
                 token = strtok(NULL, search);
-                strcpy(teste->schedule_type, token);
+                teste -> schedule_type = atoi(token);
                 //printf("%s",token);
 
             }

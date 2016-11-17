@@ -75,17 +75,17 @@ int main(int argc){
 void *masterthread(){
   int n_threads=1;
   int numthreads, i;
-  /*
+
   free(child_threads);
-  child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));*/
-  /*for(i =0; i < n_threads; i++){
+  child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
+  for(i =0; i < n_threads; i++){
     if(pthread_create(&child_threads[i], NULL, temp_func, (void* )i) !=0) {
       printf("Error at pthread_create 1\n");
     }
-  }*/
+  }
 
   /*NOT SURE ABOUT THIS WHILE 1*/
-  //while(1){
+ //while(1){
     if(n_threads != teste->n_threads){
       numthreads=teste->n_threads;
       free(child_threads);
@@ -97,14 +97,14 @@ void *masterthread(){
       }
     }
     /*SCHEDULE DA QUEUE*/
-   /* if(queue_aux > 0){ //quer dizer que existem elementos na queue
+    if(queue_aux > 0){ //quer dizer que existem elementos na queue
       if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
         organize_static();
       }
       else if(teste->schedule_type == 3 && queue_aux > 1){ //PRIORIDADE DINÂMICOS
         organize_dynamic();
       }
-    }*/
+    }
   //}
 }
 void organize_static(){
@@ -209,7 +209,7 @@ void reader_pipe(){
 	char *token1;
     char *token2;
 	while(1){
-		
+
     	char * myfifo = "/tmp/myfifo2";
 		fd = open(myfifo, O_RDONLY);
     	read(fd, buf, MAX_BUF);
@@ -257,7 +257,7 @@ void reader_pipe(){
 	    }
     	close(fd);
     }
-    	
+
     return;
 }
 

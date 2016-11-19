@@ -55,6 +55,7 @@ void *temp_func(void *t);
 void carregarConfig();
 void *masterthread();
 
+void retira_paragrafo(char *linha);
 void organize_static();
 void organize_dynamic();
 
@@ -70,6 +71,8 @@ struct tm * timeServInfo;
 int shmid;
 pthread_t *child_threads;
 
+/*semaforos*/
+sem_t mutex, cond;
 int queue_aux =0; //número de elementos no buffer
 
 //estrutura para a pool de threads
@@ -105,3 +108,11 @@ typedef struct{
 }request;
 
 request *queue;
+
+/*TODO: VER ISTO -> ESTRUTURA DO FREITAS*/
+typedef struct
+{
+    long    mtype;
+    char    mtext[SIZE_BUF];
+}msgbuf;
+

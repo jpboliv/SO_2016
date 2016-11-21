@@ -198,10 +198,22 @@
     //}
     pthread_exit(NULL);
   }
+
+void search_queue(char file[]){
+  int i;
+  for(i = 0; i < queue_aux; i++){
+    if(strcmp(queue[i].stat.file_name,file)==0){
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+}
 void *workerThread(int n_pool)
 {
   int msqid;
-    key_t key;
+  key_t key;
   int n;
   msgbuf tmp;
   char num[10];
@@ -214,7 +226,7 @@ void *workerThread(int n_pool)
     if(!strncmp(queue[n].requested_file,CGI_EXPR,strlen(CGI_EXPR)))
       {
       /* //TODO: MUDAR ESTA PARTE TODA, NÃO UTILIZAMOS UMA LISTA
-         //NEM TEMOS NECESSIDADE DE PEDIDOS ACEITES
+         //NEM TEMOS NECESSIDADE DE PEDIDOS ACEITES/recusados
         if(searchList(memShared->configurations,queue[n].requested_file)==1)
         {
           execute_script(queue[n].socket,queue[n].requested_file);
@@ -256,7 +268,7 @@ void *workerThread(int n_pool)
         //Message Type
         strcpy(tmp.mtext,"");
         strcat(tmp.mtext,queue[n].stat.request_type);
-      strcat(tmp.mtext,",");
+        strcat(tmp.mtext,",");
         strcat(tmp.mtext,queue[n].stat.file_name);
         strcat(tmp.mtext,",");
         retira_paragrafo(queue[n].stat.t_reception);
@@ -267,7 +279,7 @@ void *workerThread(int n_pool)
         strcat(tmp.mtext,",");
         strcat(tmp.mtext,num);
         strcat(tmp.mtext,";");
-      tmp.mtype=1;
+        tmp.mtype=1;
         if (msgsnd(msqid, &tmp, SIZE_BUF, IPC_NOWAIT) < 0)
         {
             printf ("Não foi enviado\n");
@@ -276,9 +288,9 @@ void *workerThread(int n_pool)
         else
             printf("Message Sent\n");
 
-      queue[n].socket=0;
-      queue[n].t_request=0;
-      strcpy(queue[n].requested_file,"");
+        queue[n].socket=0;
+        queue[n].t_request=0;
+        strcpy(queue[n].requested_file,"");
 
       queue_aux--;
       sem_post(&mutex);

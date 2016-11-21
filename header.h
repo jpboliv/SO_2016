@@ -110,8 +110,7 @@ typedef struct{
 request *queue;
 
 /*TODO: VER ISTO -> ESTRUTURA DO FREITAS*/
-typedef struct
-{
+typedef struct{
     long    mtype;
     char    mtext[SIZE_BUF];
 }msgbuf;

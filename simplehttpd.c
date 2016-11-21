@@ -199,16 +199,17 @@
     pthread_exit(NULL);
   }
 
-void search_queue(char file[]){
+int search_queue(configs *teste,char file[]){
   int i;
   for(i = 0; i < queue_aux; i++){
-    if(strcmp(queue[i].stat.file_name,file)==0){
+    if(strcmp(teste->file_list[i],file)==0){
       return 1;
     }
     else {
       return 0;
     }
   }
+  return -1;
 }
 void *workerThread(int n_pool)
 {
@@ -225,26 +226,24 @@ void *workerThread(int n_pool)
     n=queue_aux-1; //pegar no último pedido
     if(!strncmp(queue[n].requested_file,CGI_EXPR,strlen(CGI_EXPR)))
       {
-      /* //TODO: MUDAR ESTA PARTE TODA, NÃO UTILIZAMOS UMA LISTA
-         //NEM TEMOS NECESSIDADE DE PEDIDOS ACEITES/recusados
-        if(searchList(memShared->configurations,queue[n].requested_file)==1)
+        if(search_queue(teste,queue[n].requested_file)==1)
         {
-          execute_script(queue[n].socket,queue[n].requested_file);
+          //execute_script(queue[n].socket,queue[n].requested_file);
           memShared->pedidosAceites++;
           printf("Executou script!\n");
         }
-        *//*
+
         else
         {
           cannot_execute((int)socket);
           memShared->pedidosRecusados++;
           printf("Não executou script\n");
-        }*/
         }
+      }
       else
       {
         send_page(queue[n].socket);
-        //memShared->pedidosAceites++;
+        memShared->pedidosAceites++;
       }
       close(queue[n].socket);
       if(queue[n].t_request==1){

@@ -59,6 +59,7 @@ void retira_paragrafo(char *linha);
 void organize_static();
 void organize_dynamic();
 
+
 char buf[SIZE_BUF];
 char req_buf[SIZE_BUF];
 char buf_tmp[SIZE_BUF];
@@ -88,6 +89,7 @@ typedef struct {
   char file_list[50][50]; //lista de ficheiros
 }configs;
 configs *teste;
+int search_queue(configs *teste,char file[]);
 
 //estrutura das estatisticas
 typedef struct{
@@ -96,6 +98,8 @@ typedef struct{
 	int thread_ans; //thread que responde
 	char t_reception[50]; //hora de recepção
 	char t_sent[20]; // hora de envio
+  int pedidosRecusados;
+  int pedidosAceites;
 }statistic;
 statistic *memShared;
 

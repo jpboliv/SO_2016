@@ -12,7 +12,7 @@
 
     pthread_mutex_t count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    int main(int argc){
+    int main(int argc, char ** argv){
       struct sockaddr_in client_name;
       socklen_t client_name_len = sizeof(client_name);
       int port;
@@ -104,7 +104,7 @@
 
     void init(){
       //alocar espaço de memoria partilhada
-      if((shmid = shmget(IPC_PRIVATE, sizeof(statistic), IPC_CREAT|0777)) <0 ) {
+      if((shmid = shmget(IPC_PRIVATE, sizeof(statistic), IPC_CREAT|0777)) < 0 ) {
         perror("Error at shmget\n");
       }
 
@@ -113,11 +113,12 @@
         perror("Error at shmat\n");
       }
 
+    memShared->pedidosAceites=0;
+    memShared->pedidosRecusados=0;
       /*le ficheiro */
       carregarConfig();
 
       /*criação da pool de threads */
-      int *threads_id, i;
       pthread_t scheduler;
       sem_init(&mutex, 0, 1);
       sem_init(&cond, 0, 0);
@@ -137,19 +138,22 @@
       //testing cleanup
       int i;
 
-    /*
+    
       for(i=0;i<teste->n_threads;i++){
           pthread_cancel(child_threads[i]);
           printf("A fechar a thread %d \n", i);
         }
-    */
+    
+/*
       for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
-      }
-      pthread_exit(&masterthread);
-      pthread_exit(&child_threads);
+      }*/
+      
+      //pthread_exit(&masterthread);
+      //pthread_exit(&child_threads);
       free(child_threads);
 
+      
         //limpar estatsticas
       shmdt(memShared);
       if(shmctl(shmid, IPC_RMID, NULL) < 0){
@@ -254,11 +258,13 @@
     {
       sem_wait(&cond);
       sem_wait(&mutex);
-      do{
+      /*do{
         printf("ainda não houve pedidos\n");
         sleep(5);
-      }while(queue_aux == 0);
+      }while(queue_aux == 0);*/
+        printf("OLA, SOU O QUEUE_AUX, NUNCA SOU 0:%d\n",queue_aux);
       n=queue_aux-1;
+      printf("OLA SOU O N, NUNCA SOU NEGATIVO%d\n",n);
       if(!strncmp(queue[n].requested_file,CGI_EXPR,strlen(CGI_EXPR)))
         {
           if(search_queue(teste,queue[n].requested_file)==1)
@@ -404,7 +410,7 @@
         char *search = " = ; \n";
         char *token;
         int j = 0;
-      teste = malloc(sizeof *teste);
+      teste = malloc(sizeof (configs));
         if((fp = fopen("config.txt", "r")) == NULL){
             perror("Erro a ler o ficheiro.\n");
         }
@@ -741,3 +747,4 @@
     //printf("Pedidos Recusados: %d\n",memShared->pedidosRecusados);
     printf("Pedidos Aceites: %d\n", memShared->pedidosAceites);
   }
+

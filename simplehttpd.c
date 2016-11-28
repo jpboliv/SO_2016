@@ -27,39 +27,38 @@
       }
       if(fork()==0){
 
-          int msgflg = IPC_CREAT | 0666;
-      int msqid;
-        key_t key;
-        msgbuf tmp;
-        strcpy(tmp.mtext,"");
-        key = 1234;
-        if ((msqid = msgget(key, msgflg)) < 0)
-      {
+              int msgflg = IPC_CREAT | 0666;
+              int msqid;
+              key_t key;
+              msgbuf tmp;
+              strcpy(tmp.mtext,"");
+              key = 1234;
+              if ((msqid = msgget(key, msgflg)) < 0){
 
+              } 
+              printf("%s-%d\n", "Criar processos de gestor de estatísticas: " ,getpid());
+              signal(SIGUSR1,catch_sighup_estat); //SIGUSR1 ISTO SERVE PARA IMPRIMIR
+              while(1){
+               //Receive an answer of message type 1.
+                  if (msgrcv(msqid, &tmp, SIZE_BUF, 1, 0) < 0)
+                  {
+
+                  }
+
+                  if(strcmp(tmp.mtext,"")==0)
+                  {
+
+                  }
+                  else
+                  {
+                    appendEstatisticas(tmp.mtext);
+                    strcpy(tmp.mtext,"");
+                  }
+              }
+              exit(0);
       }
-      printf("%s-%d\n", "Criar processos de gestor de estatísticas: " ,getpid());
-      signal(SIGUSR1,catch_sighup_estat); //SIGUSR1 ISTO SERVE PARA IMPRIMIR
-      while(1)
-      {
-           //Receive an answer of message type 1.
-          if (msgrcv(msqid, &tmp, SIZE_BUF, 1, 0) < 0)
-          {
+      
 
-          }
-
-          if(strcmp(tmp.mtext,"")==0)
-          {
-
-          }
-          else
-          {
-            appendEstatisticas(tmp.mtext);
-            strcpy(tmp.mtext,"");
-          }
-      }
-        exit(0);
-      }
-      //reader_pipe(); //talvez precise de ser chamada noutro sitio IMPORTANTE VER
       // Verify number of arguments
       /*if (argc!=2) {
         printf("Usage: %s <port>\n",argv[0]);
@@ -74,8 +73,20 @@
         exit(1);
 
       // Server requests
+      //criaçao de variveis aux
+          char *search = " + \n";
+        char aux[1024];
+        char buf[MAX_BUF];
+        int fd;
+        char previous[50];
+        char *token1;
+        char *token2;
+        char * myfifo = "/tmp/myfifo2";
+        
+        //fim de variaveis aux
       while (1)
       {
+        
         // Accept connection on socket
         if ( (new_conn = accept(socket_conn,(struct sockaddr *)&client_name,&client_name_len)) == -1 ) {
           printf("Error accepting connection\n");
@@ -98,7 +109,64 @@
       */
         // Terminate connection with client
         //close(new_conn);
+         
+
+          //READER FROM PIPE
+          
+        fd = open(myfifo, O_RDONLY);
+          read(fd, buf, MAX_BUF);
+
+          strcpy(aux,buf);
+
+          if(strcmp(previous,buf)==0){
+          }
+          else{
+            token1 = strtok(aux,search);
+
+            if(strcmp(token1,"1")==0){
+                token2 = strtok(NULL,search);
+                //printf("sou o patricio:%s\n",token2);
+                if(strcmp(token2,"1")==0){
+                  printf("Scheduling Normal\n");
+                  //teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
+                  strcpy(previous,buf);
+                }
+                else if(strcmp(token2,"2")==0){
+                  printf("Scheduling com prioridade aos pedidos estaticos\n");
+                  teste->schedule_type = 2;
+                  strcpy(previous,buf);
+                }
+                else if(strcmp(token2,"3")==0){
+                  printf("Scheduling com prioridade aos pedidos dinamicos\n");
+                  teste->schedule_type = 3;
+                  strcpy(previous,buf);
+                }
+            }
+            else if(strcmp(token1,"2")==0){
+              if(queue_aux==0){
+                token2 = strtok(NULL,search);
+                //printf("sou o patricio:%s\n",token2);
+                printf("Numero de threads novo:%s\n",token2);
+                destroy_thread();
+                int new_threads = atoi(token2);
+                //teste->n_threads = atoi(token2);
+                teste->n_threads = new_threads;
+                create_threads();//SUBSTITUI O NUMERO THREADS ANTIGA
+                strcpy(previous,buf);
+              }else{printf("i'm busy dumbass");}
+            }
+            else  if(strcmp(token1,"3")==0){
+                token2 = strtok(NULL,search);
+                printf("sou o patricio:%s\n",token2);
+                printf("Novo ficheiro permitido: %s\n",token2);
+                //strcpy(teste->file_list[j], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
+                strcpy(previous,buf);
+            }
+          }
+
+          //END OF READER OF PIPE
           sem_post(&cond);
+        
       }
     }
 
@@ -122,6 +190,7 @@
       pthread_t scheduler;
       sem_init(&mutex, 0, 1);
       sem_init(&cond, 0, 0);
+      sem_init(&some,0,0);
 
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");
@@ -131,6 +200,28 @@
       //exit(0);
     }
 
+    void destroy_thread(){
+      int i;
+      for(i=0;i<teste->n_threads;i++){
+              pthread_cancel(child_threads[i]);
+              printf("A fechar a thread %d \n", i);
+            }
+            printf("vou sair lol");
+        //pthread_exit(&masterthread);
+          //pthread_exit(&child_threads);
+        printf("vou sair lol2");
+          //free(child_threads);
+          printf("vou sair lol3");
+          
+           
+    }
+void create_threads(){
+
+      pthread_t scheduler;
+   if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
+            perror("Error at creating master thread\n");
+      }
+}
     //TODO: aguardar que a  lista de pedidos seja tratada
     void catch_ctrlc(int sig){
 
@@ -144,8 +235,8 @@
           printf("A fechar a thread %d \n", i);
         }
     
-/*
-      for( i =0; i < teste->n_threads; i++){
+
+      /*for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
       }*/
       
@@ -163,18 +254,18 @@
       exit(0);
     }
 
-    void *masterthread(){
-      int n_threads=1;
+    void *masterthread(void* arg){
+      //int n_threads=1;
       int numthreads, i;
       free(child_threads);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
-      for(i =0; i < n_threads; i++){
+      for(i =0; i <teste->n_threads; i++){
         if(pthread_create(&child_threads[i], NULL, workerThread, (void *)i )!=0) {
           printf("Error at pthread_create 1\n");
         }
       }
      while(1){
-        if(numthreads != teste->n_threads){
+        /*if(numthreads != teste->n_threads){
           numthreads=teste->n_threads;
           free(child_threads);
           child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
@@ -183,7 +274,7 @@
               perror("Error at creating thread\n");
             }
           }
-        }
+        }*
         /*SCHEDULE DA QUEUE*/
         if(queue_aux > 0){ //quer dizer que existem elementos na queue
           if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
@@ -256,15 +347,14 @@
     printf("estou a ser criada%d\n",n_pool);
     while(1)
     {
+
+      if(queue_aux>0){
+
       sem_wait(&cond);
       sem_wait(&mutex);
-      /*do{
-        printf("ainda não houve pedidos\n");
-        sleep(5);
-      }while(queue_aux == 0);*/
-        printf("OLA, SOU O QUEUE_AUX, NUNCA SOU 0:%d\n",queue_aux);
+
       n=queue_aux-1;
-      printf("OLA SOU O N, NUNCA SOU NEGATIVO%d\n",n);
+
       if(!strncmp(queue[n].requested_file,CGI_EXPR,strlen(CGI_EXPR)))
         {
           if(search_queue(teste,queue[n].requested_file)==1)
@@ -333,69 +423,22 @@
           queue_aux--;
           sem_post(&mutex);
 
+
       #if DEBUG
         printf("->queue_aux: %d\n",queue_aux);
       #endif
+        }
+        else{}
     }
+    pthread_exit(NULL);
   }
 
     /*leitura do namedpipe*/
     void reader_pipe(){
-      char *search = " + \n";
-      char aux[1024];
-      char buf[MAX_BUF];
-      int fd;
-      char previous[50];
-      char *token1;
-      char *token2;
+      
       while(1){
 
-          char * myfifo = "/tmp/myfifo2";
-        fd = open(myfifo, O_RDONLY);
-          read(fd, buf, MAX_BUF);
-          //printf("sou eu o buffer:%s\n",buf);
-          strcpy(aux,buf);
-          //printf("Received: %s\n", aux);
-          if(strcmp(previous,buf)==0){
-          }
-          else{
-            token1 = strtok(aux,search);
-            //printf("sou o manel:%s",token1);
-            if(strcmp(token1,"1")==0){
-                token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
-                if(strcmp(token2,"1")==0){
-                  printf("Scheduling Normal\n");
-                  //teste->schedule_type = 1;
-                  strcpy(previous,buf);
-                }
-                else if(strcmp(token2,"2")==0){
-                  printf("Scheduling com prioridade aos pedidos estaticos\n");
-                  //teste->schedule_type = 2;
-                  strcpy(previous,buf);
-                }
-                else if(strcmp(token2,"3")==0){
-                  printf("Scheduling com prioridade aos pedidos dinamicos\n");
-                  //teste->schedule_type = 3;
-                  strcpy(previous,buf);
-                }
-            }
-            else if(strcmp(token1,"2")==0){
-                token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
-                printf("Numero de threads novo:%s\n",token2);
-                //teste->n_threads = atoi(token2);//SUBSTITUI O NUMERO THREADS ANTIGA
-                strcpy(previous,buf);
-            }
-            else  if(strcmp(token1,"3")==0){
-                token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
-                printf("Novo ficheiro permitido: %s\n",token2);
-                //strcpy(teste->file_list[j], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
-                strcpy(previous,buf);
-            }
-          }
-          close(fd);
+          
         }
 
         return;

@@ -56,10 +56,13 @@ void cleanup();
 void *temp_func(void *t);
 void carregarConfig();
 void *masterthread();
+void destroy_thread();
+void create_threads();
 
 void retira_paragrafo(char *linha);
 void organize_static();
 void organize_dynamic();
+
 
 
 char buf[SIZE_BUF];
@@ -77,6 +80,8 @@ pthread_t *child_threads;
 /*semaforos*/
 sem_t mutex, cond;
 int queue_aux =0; //número de elementos no buffer
+
+int len_file_list = 0;
 
 //estrutura para a pool de threads
 typedef struct pool{

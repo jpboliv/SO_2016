@@ -57,7 +57,7 @@
               }
               exit(0);
       }
-
+      //reader_pipe(); //talvez precise de ser chamada noutro sitio IMPORTANTE VER
       // Verify number of arguments
       /*if (argc!=2) {
         printf("Usage: %s <port>\n",argv[0]);
@@ -77,7 +77,7 @@
         char aux[1024];
         char buf[MAX_BUF];
         int fd;
-        char previous[50];
+        char previous[100];
         char *token1;
         char *token2;
         char * myfifo = "/tmp/myfifo2";
@@ -126,7 +126,7 @@
 
             if(strcmp(token1,"1")==0){
                 token2 = strtok(NULL,search);
-                //printf("sou o patricio:%s\n",token2);
+                printf("sou o patricio:%s\n",token2);
                 if(strcmp(token2,"1")==0){
                   printf("Scheduling Normal\n");
                   //teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
@@ -146,7 +146,7 @@
             else if(strcmp(token1,"2")==0){
               if(queue_aux==0){
                 token2 = strtok(NULL,search);
-                //printf("sou o patricio:%s\n",token2);
+                printf("sou o patricio:%s\n",token2);
                 printf("Numero de threads novo:%s\n",token2);
                 destroy_thread();
                 int jota = atoi(token2);
@@ -158,9 +158,15 @@
             }
             else  if(strcmp(token1,"3")==0){
                 token2 = strtok(NULL,search);
-                //printf("sou o patricio:%s\n",token2);
+                printf("sou o patricio:%s\n",token2);
                 printf("Novo ficheiro permitido: %s\n",token2);
-                //strcpy(teste->file_list[j], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
+                strcpy(teste->file_list[len_file_list], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
+                len_file_list++;
+                int k;
+                printf("listagem dos files:");
+                for(k=0;k<len_file_list;k++){
+                  printf("%s\n",teste->file_list[k] );
+                }
                 strcpy(previous,buf);
             }
           }
@@ -191,7 +197,7 @@
       pthread_t scheduler;
       sem_init(&mutex, 0, 1);
       sem_init(&cond, 0, 0);
-      
+      sem_init(&some,0,0);
 
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");
@@ -217,7 +223,7 @@
            
     }
 void create_threads(){
-	//printf("so estou a testar o git na maquina virtual");
+
       pthread_t scheduler;
    if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
             perror("Error at creating master thread\n");
@@ -490,6 +496,7 @@ void create_threads(){
                         strcpy(teste->file_list[j], token);
                         //printf("%s",token);
                         j++;
+                        len_file_list = j;
                         token = strtok(NULL, search);
                     }
                 }

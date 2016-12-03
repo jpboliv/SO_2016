@@ -57,7 +57,6 @@
               }
               exit(0);
       }
-      //reader_pipe(); //talvez precise de ser chamada noutro sitio IMPORTANTE VER
       // Verify number of arguments
       /*if (argc!=2) {
         printf("Usage: %s <port>\n",argv[0]);
@@ -228,8 +227,8 @@ void create_threads(){
 
 //criaçao de variveis aux
           char *search = " + \n";
-        char aux[2048];
-        char buf[2*MAX_BUF];
+        char aux[1024];
+        char buf[MAX_BUF];
         int fd;
         char previous[100];
         char *token1;
@@ -245,7 +244,7 @@ void create_threads(){
           
         fd = open(myfifo, O_RDWR);
 
-          read(fd, buf, 2*MAX_BUF);
+          read(fd, buf, MAX_BUF);
           //fgets(buf,MAX_BUF, fd);
           strcpy(aux,buf);
 

@@ -72,20 +72,15 @@
         exit(1);
 
       // Server requests
-      //criaçao de variveis aux
-          char *search = " + \n";
-        char aux[1024];
-        char buf[MAX_BUF];
-        int fd;
-        char previous[100];
-        char *token1;
-        char *token2;
-        char * myfifo = "/tmp/myfifo2";
-        
-        //fim de variaveis aux
+      
       while (1)
       {
+
+
+
         
+      
+         
 
 
         // Accept connection on socket
@@ -93,6 +88,8 @@
           printf("Error accepting connection\n");
           exit(1);
         }
+
+
 
         // Identify new client
         identify(new_conn);
@@ -112,66 +109,6 @@
         //close(new_conn);
          
 
-          //READER FROM PIPE
-          
-        fd = open(myfifo, O_RDONLY);
-          read(fd, buf, MAX_BUF);
-
-          strcpy(aux,buf);
-
-          if(strcmp(previous,buf)==0){
-          }
-          else{
-            token1 = strtok(aux,search);
-
-            if(strcmp(token1,"1")==0){
-                token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
-                if(strcmp(token2,"1")==0){
-                  printf("Scheduling Normal\n");
-                  //teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
-                  strcpy(previous,buf);
-                }
-                else if(strcmp(token2,"2")==0){
-                  printf("Scheduling com prioridade aos pedidos estaticos\n");
-                  teste->schedule_type = 2;
-                  strcpy(previous,buf);
-                }
-                else if(strcmp(token2,"3")==0){
-                  printf("Scheduling com prioridade aos pedidos dinamicos\n");
-                  teste->schedule_type = 3;
-                  strcpy(previous,buf);
-                }
-            }
-            else if(strcmp(token1,"2")==0){
-              if(queue_aux==0){
-                token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
-                printf("Numero de threads novo:%s\n",token2);
-                destroy_thread();
-                int jota = atoi(token2);
-                //teste->n_threads = atoi(token2);
-                teste->n_threads = jota;
-                create_threads();//SUBSTITUI O NUMERO THREADS ANTIGA
-                strcpy(previous,buf);
-              }else{printf("i'm busy dumbass");}
-            }
-            else  if(strcmp(token1,"3")==0){
-                token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
-                printf("Novo ficheiro permitido: %s\n",token2);
-                strcpy(teste->file_list[len_file_list], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
-                len_file_list++;
-                int k;
-                printf("listagem dos files:");
-                for(k=0;k<len_file_list;k++){
-                  printf("%s\n",teste->file_list[k] );
-                }
-                strcpy(previous,buf);
-            }
-          }
-
-          //END OF READER OF PIPE
           sem_post(&cond);
         
       }
@@ -195,6 +132,7 @@
 
       /*criação da pool de threads */
       pthread_t scheduler;
+      pthread_t pipe;
       sem_init(&mutex, 0, 1);
       sem_init(&cond, 0, 0);
       sem_init(&some,0,0);
@@ -202,7 +140,9 @@
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");
       }
-
+      if(pthread_create(&pipe, NULL, reader_pipe, NULL) != 0){
+        perror("Error at creating master thread\n");
+      }
       //printf("NUmeros de thread:%d \n Tipo de coiso:%s \n Server-Porto:%d \n File1: %s \n File2:%s",teste->n_threads,teste->scheduling,teste->server_port,teste->file_list[0],teste->file_list[1]);
       //exit(0);
     }
@@ -294,6 +234,88 @@ void create_threads(){
       }
     }
 
+    void *reader_pipe(void* arg){
+      
+
+//criaçao de variveis aux
+          char *search = " + \n";
+        char aux[2048];
+        char buf[2*MAX_BUF];
+        int fd;
+        char previous[100];
+        char *token1;
+        char *token2;
+        int nbytes;
+
+        char * myfifo = "/tmp/myfifo2";
+        
+        //fim de variaveis aux
+
+     while(1){
+        //READER FROM PIPE
+          
+        fd = open(myfifo, O_RDWR);
+
+          read(fd, buf, 2*MAX_BUF);
+          //fgets(buf,MAX_BUF, fd);
+          strcpy(aux,buf);
+
+          if(strcmp(previous,buf)==0){
+          }
+          else{
+            token1 = strtok(aux,search);
+            printf("%s\n",buf );
+            if(strcmp(token1,"1")==0){
+                token2 = strtok(NULL,search);
+                printf("sou o patricio:%s\n",token2);
+                if(strcmp(token2,"1")==0){
+                  printf("Scheduling Normal\n");
+                  //teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
+                  strcpy(previous,buf);
+                }
+                else if(strcmp(token2,"2")==0){
+                  printf("Scheduling com prioridade aos pedidos estaticos\n");
+                  teste->schedule_type = 2;
+                  strcpy(previous,buf);
+                }
+                else if(strcmp(token2,"3")==0){
+                  printf("Scheduling com prioridade aos pedidos dinamicos\n");
+                  teste->schedule_type = 3;
+                  strcpy(previous,buf);
+                }
+            }
+            else if(strcmp(token1,"2")==0){
+              if(queue_aux==0){
+                token2 = strtok(NULL,search);
+                printf("sou o patricio:%s\n",token2);
+                printf("Numero de threads novo:%s\n",token2);
+                destroy_thread();
+                int jota = atoi(token2);
+                //teste->n_threads = atoi(token2);
+                teste->n_threads = jota;
+                create_threads();//SUBSTITUI O NUMERO THREADS ANTIGA
+                strcpy(previous,buf);
+              }else{printf("i'm busy dumbass");}
+            }
+            else  if(strcmp(token1,"3")==0){
+                token2 = strtok(NULL,search);
+                printf("sou o patricio:%s\n",token2);
+                printf("Novo ficheiro permitido: %s\n",token2);
+                strcpy(teste->file_list[len_file_list], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
+                len_file_list++;
+                int k;
+                printf("listagem dos files:");
+                for(k=0;k<len_file_list;k++){
+                  printf("%s\n",teste->file_list[k] );
+                }
+                strcpy(previous,buf);
+            }
+          }
+
+          //END OF READER OF PIPE
+      }
+    }
+
     void organize_static(){
       int i, n;
       request tmp;
@@ -366,16 +388,16 @@ void create_threads(){
         {
           if(search_queue(teste,queue[n].requested_file)==1)
           {
-            //execute_script(queue[n].socket,queue[n].requested_file);
+            execute_script(queue[n].socket);
             memShared->pedidosAceites++;
-            printf("Executou script!\n");
+            printf("Executou o ficheiro comprimido!\n");
           }
 
           else
           {
             cannot_execute((int)socket);
             memShared->pedidosRecusados++;
-            printf("Não executou script\n");
+            printf("Não executou\n");
           }
         }
         else
@@ -440,16 +462,6 @@ void create_threads(){
     pthread_exit(NULL);
   }
 
-    /*leitura do namedpipe*/
-    void reader_pipe(){
-      
-      while(1){
-
-          
-        }
-
-        return;
-    }
 
     /*CARREGAMENTO DO FICHEIRO CONFIG*/
     void carregarConfig(){
@@ -583,15 +595,29 @@ void create_threads(){
       return;
     }
 
+void execute_script(int socket) {
+  FILE *in;
+  char buf[512];
+  char * cmd; cmd = "";
+  sprintf(buf_tmp,"zcat htdocs/%s",req_buf);
 
-    // Execute script in /cgi-bin
-    void execute_script(int socket)
-    {
-      // Currently unsupported, return error code to client
-      cannot_execute(socket);
 
-      return;
+  if((in = popen(buf_tmp, "r")) == NULL) {
+    not_found(socket);
+  } else {
+    send_header(socket);
+    
+    printf("%s\n",in );
+    send(socket, "<html><body>", strlen("<html><body>"),0);
+    while (fgets(buf, sizeof(buf) - 1, in) != NULL) {
+      send(socket, "<p>", strlen("<p>"),0);
+      send(socket, buf, strlen(buf), 0);
+      send(socket, "</p>", strlen("</p>"),0);
     }
+    send(socket, "</body></html>", strlen("</body></html>"),0);
+  }
+  pclose(in);
+}
 
 
     // Send html page to client

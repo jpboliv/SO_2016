@@ -75,21 +75,11 @@
       
       while (1)
       {
-
-
-
-        
-      
-         
-
-
         // Accept connection on socket
         if ( (new_conn = accept(socket_conn,(struct sockaddr *)&client_name,&client_name_len)) == -1 ) {
           printf("Error accepting connection\n");
           exit(1);
         }
-
-
 
         // Identify new client
         identify(new_conn);
@@ -384,7 +374,7 @@ void create_threads(){
 
       n=queue_aux-1;
 
-      if(!strncmp(queue[n].requested_file,CGI_EXPR,strlen(CGI_EXPR)))
+      if(strstr(queue[n].requested_file,".gz"))
         {
           if(search_queue(teste,queue[n].requested_file)==1)
           {
@@ -559,7 +549,7 @@ void create_threads(){
 
       for (i=0;i<2*teste->n_threads;i++){
         if(queue[i].t_request==0){
-          if(!strncmp(req_buf,CGI_EXPR,strlen(CGI_EXPR))){
+          if(strstr(req_buf,".gz")){
             queue[i].t_request=2;
           }
           else{
@@ -606,8 +596,6 @@ void execute_script(int socket) {
     not_found(socket);
   } else {
     send_header(socket);
-    
-    printf("%s\n",in );
     send(socket, "<html><body>", strlen("<html><body>"),0);
     while (fgets(buf, sizeof(buf) - 1, in) != NULL) {
       send(socket, "<p>", strlen("<p>"),0);

@@ -51,7 +51,7 @@ void appendEstatisticas(char linha[]);
 void catch_sighup_estat(int sig); 
 void *workerThread(int n_pool);
 void init();
-void reader_pipe();
+void *reader_pipe();
 void cleanup();
 void *temp_func(void *t);
 void carregarConfig();

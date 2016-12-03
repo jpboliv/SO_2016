@@ -125,7 +125,6 @@
       pthread_t pipe;
       sem_init(&mutex, 0, 1);
       sem_init(&cond, 0, 0);
-      sem_init(&some,0,0);
 
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");

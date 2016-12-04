@@ -163,7 +163,6 @@ void create_threads(){
       printf("Server terminating\n");
       //testing cleanup
       int i;
-
     
       for(i=0;i<teste->n_threads;i++){
           pthread_cancel(child_threads[i]);
@@ -176,6 +175,7 @@ void create_threads(){
       }*/
       
       //pthread_exit(&masterthread);
+      //pthread_exit(&reader_pipe);
       //pthread_exit(&child_threads);
       free(child_threads);
 
@@ -191,7 +191,8 @@ void create_threads(){
 
     void *masterthread(void* arg){
       //int n_threads=1;
-      int numthreads, i;
+      //int numthreads;
+      int i;
       free(child_threads);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
       for(i =0; i <teste->n_threads; i++){
@@ -209,8 +210,10 @@ void create_threads(){
               perror("Error at creating thread\n");
             }
           }
-        }*
-        /*SCHEDULE DA QUEUE*/
+        }*/
+
+
+        //SCHEDULE DA QUEUE
         if(queue_aux > 0){ //quer dizer que existem elementos na queue
           if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
             organize_static();
@@ -222,29 +225,36 @@ void create_threads(){
       }
     }
 
-    void *reader_pipe(void* arg){
-      
+
+void *reader_pipe(void* arg){
+    char * myfifo = "/tmp/myfifo2";
+    // Creates the named pipe if it doesn't exist yet
+  if ((mkfifo(myfifo, O_CREAT|O_EXCL|0600)<0) && (errno!= EEXIST)) {
+      perror("Cannot create pipe: ");
+      exit(0);
+    }
+// Opens the pipe for reading
+  int fd;
+  if ((fd = open(myfifo, O_RDONLY)) < 0) {
+  perror("Cannot open pipe for reading: ");
+  exit(0);
+  }
 
 //criaçao de variveis aux
           char *search = " + \n";
-        char aux[1024];
-        char buf[MAX_BUF];
-        int fd;
-        char previous[100];
-        char *token1;
-        char *token2;
-        int nbytes;
-
-        char * myfifo = "/tmp/myfifo2";
         
         //fim de variaveis aux
 
      while(1){
         //READER FROM PIPE
           
-        fd = open(myfifo, O_RDWR);
-
-          read(fd, buf, MAX_BUF);
+        char previous[100];
+        char *token1;
+        char *token2;
+        
+          char aux[1024];
+        char buf[MAX_BUF];
+          read(fd, &buf, sizeof(buf));
           //fgets(buf,MAX_BUF, fd);
           strcpy(aux,buf);
 
@@ -252,7 +262,7 @@ void create_threads(){
           }
           else{
             token1 = strtok(aux,search);
-            printf("%s\n",buf );
+
             if(strcmp(token1,"1")==0){
                 token2 = strtok(NULL,search);
                 printf("sou o patricio:%s\n",token2);
@@ -299,8 +309,9 @@ void create_threads(){
                 strcpy(previous,buf);
             }
           }
-
+        close(fd);
           //END OF READER OF PIPE
+
       }
     }
 
@@ -586,7 +597,7 @@ void create_threads(){
 void execute_script(int socket) {
   FILE *in;
   char buf[512];
-  char * cmd; cmd = "";
+  //char * cmd; cmd = "";
   sprintf(buf_tmp,"zcat htdocs/%s",req_buf);
 
 

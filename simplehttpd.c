@@ -229,13 +229,12 @@ void create_threads(){
 void *reader_pipe(void* arg){
     char * myfifo = "/tmp/myfifo2";
     // Creates the named pipe if it doesn't exist yet
-  if ((mkfifo(myfifo, O_CREAT|O_EXCL|0600)<0) && (errno!= EEXIST)) {
+  if ((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600)<0) && (errno!= EEXIST)) {
       perror("Cannot create pipe: ");
       exit(0);
     }
-// Opens the pipe for reading
   int fd;
-  if ((fd = open(myfifo, O_RDONLY)) < 0) {
+  if ((fd = open(PIPE_NAME, O_RDONLY)) < 0) {
   perror("Cannot open pipe for reading: ");
   exit(0);
   }
@@ -247,7 +246,8 @@ void *reader_pipe(void* arg){
 
      while(1){
         //READER FROM PIPE
-          
+          // Opens the pipe for reading
+  
         char previous[100];
         char *token1;
         char *token2;

@@ -3,9 +3,19 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#define PIPE_NAME "np_client_server"
 void write_pipe(char *aux);
 void menu();
+int fd;
 int main(){
+    char * myfifo = "/tmp/myfifo2";
+    /* write "Hi" to the FIFO */
+
+    
+    if ((fd = open(PIPE_NAME, O_WRONLY)) < 0) {
+    perror("Cannot open pipe for writing: ");
+    exit(0);
+}
     menu();
     //strcpy(aux,"swag");
     //printf("%s\n",aux );
@@ -41,19 +51,8 @@ void menu(){
      }
     strcat(aux1, "+");
     strcat(aux1,aux2);
-    write_pipe(aux1);
+    strcat(aux1,"+");
+    printf("%s\n",aux1 );
+    write(fd, aux1, sizeof(&aux1));
     menu();
-}
-
-void write_pipe(char *aux){
-    int fd;
-    char * myfifo = "/tmp/myfifo2";
-    /* create the FIFO (named pipe) */
-    mkfifo(myfifo, 0666);
-    /* write "Hi" to the FIFO */
-    fd = open(myfifo, O_WRONLY);
-    write(fd, aux, sizeof(&aux));
-    close(fd);
-    /* remove the FIFO */
-    unlink(myfifo);
 }

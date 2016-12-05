@@ -24,6 +24,7 @@
 
 // Produce debug information
 #define DEBUG	  	1
+#define PIPE_NAME "np_client_server"
 
 // Header of HTTP reply to client
 #define	SERVER_STRING 	"Server: simpleserver/0.1.0\r\n"

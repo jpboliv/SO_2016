@@ -137,16 +137,20 @@
 
     void destroy_thread(){
       int i;
+       /*for( i =0; i < teste->n_threads; i++){
+        pthread_join(child_threads[i], NULL);
+        printf("A esperar que a thread%d termine \n",i );
+      }*/
       for(i=0;i<teste->n_threads;i++){
               pthread_cancel(child_threads[i]);
               printf("A fechar a thread %d \n", i);
             }
-            printf("vou sair lol");
+            //printf("vou sair lol");
         //pthread_exit(&masterthread);
           //pthread_exit(&child_threads);
-        printf("vou sair lol2");
+        //printf("vou sair lol2");
           //free(child_threads);
-          printf("vou sair lol3");
+          //printf("vou sair lol3");
           
            
     }
@@ -309,7 +313,7 @@ void *reader_pipe(void* arg){
                 strcpy(previous,buf);
             }
           }
-        close(fd);
+          
           //END OF READER OF PIPE
 
       }

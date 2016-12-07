@@ -53,6 +53,6 @@ void menu(){
     strcat(aux1,aux2);
     strcat(aux1,"+");
     printf("%s\n",aux1 );
-    write(fd, aux1, sizeof(&aux1));
+    write(fd, aux1, sizeof(aux1));
     menu();
 }

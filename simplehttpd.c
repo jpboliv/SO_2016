@@ -137,25 +137,14 @@
 
     void destroy_thread(){
       int i;
-       /*for( i =0; i < teste->n_threads; i++){
+      flag=1;
+      for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
-        printf("A esperar que a thread%d termine \n",i );
-      }*/
-      for(i=0;i<teste->n_threads;i++){
-              pthread_cancel(child_threads[i]);
-              printf("A fechar a thread %d \n", i);
-            }
-            //printf("vou sair lol");
-        //pthread_exit(&masterthread);
-          //pthread_exit(&child_threads);
-        //printf("vou sair lol2");
-          //free(child_threads);
-          //printf("vou sair lol3");
-          
+      }
            
     }
 void create_threads(){
-
+flag = 0;
       pthread_t scheduler;
    if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
             perror("Error at creating master thread\n");
@@ -167,19 +156,19 @@ void create_threads(){
       printf("Server terminating\n");
       //testing cleanup
       int i;
-    
-      for(i=0;i<teste->n_threads;i++){
+      flag=1;
+      for( i =0; i < teste->n_threads; i++){
+        pthread_join(child_threads[i], NULL);
+      }
+      /*for(i=0;i<teste->n_threads;i++){
           pthread_cancel(child_threads[i]);
           printf("A fechar a thread %d \n", i);
         }
-    
-
-      /*for( i =0; i < teste->n_threads; i++){
-        pthread_join(child_threads[i], NULL);
-      }*/
-      
+    */
+      pthread_cancel(masterthread);  
       //pthread_exit(&masterthread);
       //pthread_exit(&reader_pipe);
+      //pthread_cancel(reader_pipe);
       //pthread_exit(&child_threads);
       free(child_threads);
 
@@ -217,7 +206,7 @@ void create_threads(){
         }*/
 
 
-        //SCHEDULE DA QUEUE
+        //SCHEDULE DA queue
         if(queue_aux > 0){ //quer dizer que existem elementos na queue
           if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
             organize_static();
@@ -226,12 +215,15 @@ void create_threads(){
             organize_dynamic();
           }
         }
+        else if(teste->schedule_type == 1 && queue_aux > 1){ 
+          organize_fifo();
+        }
       }
     }
 
 
 void *reader_pipe(void* arg){
-    char * myfifo = "/tmp/myfifo2";
+  
     // Creates the named pipe if it doesn't exist yet
   if ((mkfifo(PIPE_NAME, O_CREAT|O_EXCL|0600)<0) && (errno!= EEXIST)) {
       perror("Cannot create pipe: ");
@@ -345,6 +337,21 @@ void *reader_pipe(void* arg){
           }
         }
     }
+
+    void organize_fifo(){
+      int i, n;
+      request tmp;
+      for(i=1; i<queue_aux;i++){
+        for(n=0;n<queue_aux-1;n++){
+          if(queue[n].id > queue[n+1].id){
+            tmp = queue[n+1];
+            queue[n+1] = queue[n];
+            queue[n]=tmp;
+          }
+        }
+      }
+    }
+
     /*função da worker thread*/
     /*void *temp_func(void *t){
       long my_id = (long) t;
@@ -379,7 +386,10 @@ void *reader_pipe(void* arg){
     printf("estou a ser criada%d\n",n_pool);
     while(1)
     {
-
+      if(flag==1){
+        pthread_exit(NULL);
+        return(NULL);
+      }
       if(queue_aux>0){
 
       sem_wait(&cond);
@@ -462,7 +472,6 @@ void *reader_pipe(void* arg){
         }
         else{}
     }
-    pthread_exit(NULL);
   }
 
 
@@ -825,4 +834,3 @@ void execute_script(int socket) {
     //printf("Pedidos Recusados: %d\n",memShared->pedidosRecusados);
     printf("Pedidos Aceites: %d\n", memShared->pedidosAceites);
   }
-

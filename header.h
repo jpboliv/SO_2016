@@ -63,6 +63,7 @@ void create_threads();
 void retira_paragrafo(char *linha);
 void organize_static();
 void organize_dynamic();
+void organize_fifo();
 
 
 
@@ -81,7 +82,7 @@ pthread_t *child_threads;
 /*semaforos*/
 sem_t mutex, cond;
 int queue_aux =0; //número de elementos no buffer
-
+int flag=0;
 int len_file_list = 0;
 
 //estrutura para a pool de threads
@@ -116,6 +117,7 @@ typedef struct{
 	short t_request; // tipo de pedido 1 ou 2
 	char requested_file[SIZE_BUF];
 	int socket;
+	int id;
 	statistic stat;
 }request;
 

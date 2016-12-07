@@ -138,6 +138,7 @@
     void destroy_thread(){
       int i;
       flag=1;
+      kill_master=1;
       for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
       }
@@ -145,7 +146,9 @@
     }
 void create_threads(){
 flag = 0;
+
       pthread_t scheduler;
+      pthread_cancel(masterthread);
    if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
             perror("Error at creating master thread\n");
       }
@@ -156,7 +159,11 @@ flag = 0;
       printf("Server terminating\n");
       //testing cleanup
       int i;
+      kill_master=1;
+      kill_pipe=1;
       flag=1;
+      
+
       for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
       }
@@ -194,6 +201,10 @@ flag = 0;
         }
       }
      while(1){
+      if(kill_master==1){
+        pthread_exit(NULL);
+        return(NULL);
+      }
         /*if(numthreads != teste->n_threads){
           numthreads=teste->n_threads;
           free(child_threads);
@@ -241,6 +252,10 @@ void *reader_pipe(void* arg){
         //fim de variaveis aux
 
      while(1){
+      if(kill_pipe==1){
+        pthread_exit(NULL);
+        return(NULL);
+      }
         //READER FROM PIPE
           // Opens the pipe for reading
   
@@ -281,19 +296,25 @@ void *reader_pipe(void* arg){
             else if(strcmp(token1,"2")==0){
               if(queue_aux==0){
                 token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
+                //printf("sou o patricio:%s\n",token2);
                 printf("Numero de threads novo:%s\n",token2);
-                destroy_thread();
-                int jota = atoi(token2);
-                //teste->n_threads = atoi(token2);
-                teste->n_threads = jota;
-                create_threads();//SUBSTITUI O NUMERO THREADS ANTIGA
-                strcpy(previous,buf);
+
+                  int jota = atoi(token2);
+                if(teste->n_threads == jota){
+                  printf("A pool ja tem %d threads\n",jota );
+                  strcpy(previous,buf);
+                }
+                else{
+                  destroy_thread();
+                  teste->n_threads = jota;
+                  create_threads();//SUBSTITUI O NUMERO THREADS ANTIGA
+                  strcpy(previous,buf);
+                }
               }else{printf("i'm busy dumbass");}
             }
             else  if(strcmp(token1,"3")==0){
                 token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
+                //printf("sou o patricio:%s\n",token2);
                 printf("Novo ficheiro permitido: %s\n",token2);
                 strcpy(teste->file_list[len_file_list], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
                 len_file_list++;

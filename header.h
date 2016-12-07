@@ -83,6 +83,8 @@ pthread_t *child_threads;
 sem_t mutex, cond;
 int queue_aux =0; //número de elementos no buffer
 int flag=0;
+int kill_pipe=0;
+int kill_master=0;
 int len_file_list = 0;
 
 //estrutura para a pool de threads

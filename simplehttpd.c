@@ -148,7 +148,7 @@ void create_threads(){
 flag = 0;
 kill_master=0;
       pthread_t scheduler;
-      pthread_cancel(masterthread);
+     // pthread_cancel(masterthread);
    if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
             perror("Error at creating master thread\n");
       }

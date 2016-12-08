@@ -146,7 +146,7 @@
     }
 void create_threads(){
 flag = 0;
-
+kill_master=0;
       pthread_t scheduler;
       pthread_cancel(masterthread);
    if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
@@ -172,10 +172,8 @@ flag = 0;
           printf("A fechar a thread %d \n", i);
         }
     */
-      pthread_cancel(masterthread);  
+      //pthread_cancel(masterthread);  
       //pthread_exit(&masterthread);
-      //pthread_exit(&reader_pipe);
-      //pthread_cancel(reader_pipe);
       //pthread_exit(&child_threads);
       free(child_threads);
 

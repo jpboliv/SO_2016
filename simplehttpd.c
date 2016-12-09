@@ -423,6 +423,8 @@ void *reader_pipe(void* arg){
             execute_script(queue[n].socket);
             memShared->pedidosAceites++;
             printf("Executou o ficheiro comprimido!\n");
+            memShared->n_pedidos_dinamicos++;
+            strcpy(queue[i].stat.t_sent,asctime (timeinfo));
           }
 
           else
@@ -436,6 +438,8 @@ void *reader_pipe(void* arg){
         {
           send_page(queue[n].socket);
           memShared->pedidosAceites++;
+          memShared->n_pedidos_estaticos++;
+          strcpy(queue[i].stat.t_sent,asctime (timeinfo));
         }
         close(queue[n].socket);
         if(queue[n].t_request==1){

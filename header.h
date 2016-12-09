@@ -79,6 +79,8 @@ struct tm * timeServInfo;
 int shmid;
 pthread_t *child_threads;
 
+
+
 /*semaforos*/
 sem_t mutex, cond;
 int queue_aux =0; //número de elementos no buffer
@@ -86,6 +88,7 @@ int flag=0;
 int kill_pipe=0;
 int kill_master=0;
 int len_file_list = 0;
+
 
 //estrutura para a pool de threads
 typedef struct pool{
@@ -111,6 +114,8 @@ typedef struct{
 	char t_sent[20]; // hora de envio
   int pedidosRecusados;
   int pedidosAceites;
+  int n_pedidos_estaticos =0;
+  int n_pedidos_dinamicos =0;
 }statistic;
 statistic *memShared;
 

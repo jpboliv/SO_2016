@@ -102,15 +102,6 @@
         identify(new_conn);
         // Process request
         get_request(new_conn);
-
-        /*
-        // Verify if request is for a page or script
-        if(!strncmp(req_buf,CGI_EXPR,strlen(CGI_EXPR)))
-          execute_script(new_conn);
-        else
-          // Search file with html page and send to client
-          //send_page(new_conn);
-      */
         // Terminate connection with client
         //close(new_conn);
         sem_post(full);        
@@ -129,19 +120,16 @@
       }
 
       memShared->pedidosAceites=0;
-<<<<<<< HEAD
     memShared->pedidosRecusados=0;
       /*le ficheiro */
       //sem_wait(mutex);
       carregarConfig();
       //sem_post(mutex);
-=======
       memShared->pedidosRecusados=0;
       /*le ficheiro */
       sem_wait(mutex);
       carregarConfig();
       sem_post(mutex);
->>>>>>> origin/master
       /*criação da pool de threads */
       pthread_t scheduler;
       pthread_t pipe;
@@ -191,12 +179,9 @@ kill_master=0;
       flag=1;
       
       close(socket_conn);
-<<<<<<< HEAD
       /*for( i =0; i < teste->n_threads; i++){
-=======
       /*
       for( i =0; i < teste->n_threads; i++){
->>>>>>> origin/master
         pthread_join(child_threads[i], NULL);
       }*/
       for(i=0;i<teste->n_threads;i++){
@@ -547,11 +532,8 @@ void *reader_pipe(void* arg){
         
         int j = 0;
       teste = malloc(sizeof (configs));
-<<<<<<< HEAD
       //sem_wait(mutex);
-=======
       sem_wait(mutex);
->>>>>>> origin/master
         if((fp = fopen("config.txt", "r")) == NULL){
             perror("Erro a ler o ficheiro.\n");
         }
@@ -597,11 +579,8 @@ void *reader_pipe(void* arg){
             }
 
             fclose(fp);
-<<<<<<< HEAD
            // sem_post(mutex);
-=======
             sem_post(mutex);
->>>>>>> origin/master
         }
     }
 

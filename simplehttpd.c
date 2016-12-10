@@ -392,6 +392,9 @@ void *reader_pipe(void* arg){
     char num[10];
     key = 1234;
     printf("estou a ser criada%d\n",n_pool);
+    sigset_t block_sigusr1;
+    sigemptyset (&block_ctrlc); 
+    sigaddset (&block_ctrlc, SIGINT); 
     while(1)
     {
 

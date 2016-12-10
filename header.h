@@ -23,17 +23,18 @@
 #include <sys/msg.h>
 
 // Produce debug information
-#define DEBUG	  	1
+#define DEBUG     1
 #define PIPE_NAME "np_client_server"
+#define FILEPATH "server.log"
 
 // Header of HTTP reply to client
-#define	SERVER_STRING 	"Server: simpleserver/0.1.0\r\n"
-#define HEADER_1	"HTTP/1.0 200 OK\r\n"
-#define HEADER_2	"Content-Type: text/html\r\n\r\n"
+#define SERVER_STRING   "Server: simpleserver/0.1.0\r\n"
+#define HEADER_1  "HTTP/1.0 200 OK\r\n"
+#define HEADER_2  "Content-Type: text/html\r\n\r\n"
 
-#define GET_EXPR	"GET /"
-#define CGI_EXPR	"cgi-bin/"
-#define SIZE_BUF	1024
+#define GET_EXPR  "GET /"
+#define CGI_EXPR  "cgi-bin/"
+#define SIZE_BUF  1024
 
 #define MAX_BUF 1024
 
@@ -75,7 +76,8 @@ time_t rawtime;
 struct tm * timeinfo;
 time_t timeServer;
 struct tm * timeServInfo;
-
+sigset_t block_ctrlc;
+char *ficheiro_mapeado;
 int shmid;
 pthread_t *child_threads;
 
@@ -107,25 +109,25 @@ int search_queue(configs *teste,char file[]);
 
 //estrutura das estatisticas
 typedef struct{
-	char request_type[20];
-	char file_name[50];
-	int thread_ans; //thread que responde
-	char t_reception[50]; //hora de recepção
-	char t_sent[20]; // hora de envio
+  char request_type[20];
+  char file_name[50];
+  int thread_ans; //thread que responde
+  char t_reception[50]; //hora de recepção
+  char t_sent[20]; // hora de envio
   int pedidosRecusados;
   int pedidosAceites;
-  int n_pedidos_estaticos =0;
-  int n_pedidos_dinamicos =0;
+  int n_pedidos_estaticos;
+  int n_pedidos_dinamicos;
 }statistic;
 statistic *memShared;
 
 //estrutura dos pedidos
 typedef struct{
-	short t_request; // tipo de pedido 1 ou 2
-	char requested_file[SIZE_BUF];
-	int socket;
-	int id;
-	statistic stat;
+  short t_request; // tipo de pedido 1 ou 2
+  char requested_file[SIZE_BUF];
+  int socket;
+  int id;
+  statistic stat;
 }request;
 
 request *queue;

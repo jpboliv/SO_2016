@@ -277,7 +277,7 @@ void *reader_pipe(void* arg){
                 printf("sou o patricio:%s\n",token2);
                 if(strcmp(token2,"1")==0){
                   printf("Scheduling Normal\n");
-                  //teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
+                  teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
                   strcpy(previous,buf);
                 }
                 else if(strcmp(token2,"2")==0){
@@ -371,17 +371,6 @@ void *reader_pipe(void* arg){
       }
     }
 
-    /*função da worker thread*/
-    /*void *temp_func(void *t){
-      long my_id = (long) t;
-      //while(1){
-        printf("Hello, i'm a thread %ld\n",my_id);
-        //reader_pipe();
-        sleep(5);
-      //}
-      pthread_exit(NULL);
-    }
-  */
   int search_queue(configs *teste,char file[]){
     int i;
     for(i = 0; i < queue_aux; i++){
@@ -405,10 +394,14 @@ void *reader_pipe(void* arg){
     printf("estou a ser criada%d\n",n_pool);
     while(1)
     {
+
+      
+
       if(flag==1){
         pthread_exit(NULL);
         return(NULL);
       }
+      sigprocmask (SIG_BLOCK, &block_ctrlc, NULL);
       if(queue_aux>0){
 
       sem_wait(&cond);
@@ -424,7 +417,6 @@ void *reader_pipe(void* arg){
             memShared->pedidosAceites++;
             printf("Executou o ficheiro comprimido!\n");
             memShared->n_pedidos_dinamicos++;
-            strcpy(queue[i].stat.t_sent,asctime (timeinfo));
           }
 
           else
@@ -439,7 +431,6 @@ void *reader_pipe(void* arg){
           send_page(queue[n].socket);
           memShared->pedidosAceites++;
           memShared->n_pedidos_estaticos++;
-          strcpy(queue[i].stat.t_sent,asctime (timeinfo));
         }
         close(queue[n].socket);
         if(queue[n].t_request==1){
@@ -451,8 +442,7 @@ void *reader_pipe(void* arg){
           printf("%s\n", queue[n].stat.request_type);
         }
         queue[n].stat.thread_ans=n_pool;
-        sprintf(num, "%d",queue[n].stat.thread_ans);
-        strcpy(queue[n].stat.request_type,queue[n].requested_file);
+        //strcpy(queue[n].stat.request_type,queue[n].requested_file);
         time ( &rawtime );
         timeinfo = localtime ( &rawtime );
         strcpy(queue[n].stat.t_sent,asctime (timeinfo));
@@ -470,8 +460,6 @@ void *reader_pipe(void* arg){
           strcat(tmp.mtext,",");
           retira_paragrafo(queue[n].stat.t_sent);
           strcat(tmp.mtext,queue[n].stat.t_sent);
-          strcat(tmp.mtext,",");
-          strcat(tmp.mtext,num);
           strcat(tmp.mtext,";");
           tmp.mtype=1;
           if (msgsnd(msqid, &tmp, SIZE_BUF, IPC_NOWAIT) < 0)
@@ -494,7 +482,9 @@ void *reader_pipe(void* arg){
       #endif
         }
         else{}
+          sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
     }
+
   }
 
 
@@ -506,6 +496,7 @@ void *reader_pipe(void* arg){
         char buffer[1024];
         char *search = " = ; \n";
         char *token;
+        
         int j = 0;
       teste = malloc(sizeof (configs));
         if((fp = fopen("config.txt", "r")) == NULL){
@@ -523,10 +514,13 @@ void *reader_pipe(void* arg){
                     //printf("%s",token);
                 }
                 else if (i == 1){
+
                     token = strtok(buffer, search);
                     token = strtok(NULL, search);
-                    teste -> schedule_type = atoi(token);
-                    //printf("%s",token);
+                      
+                      teste->schedule_type = 1;
+
+                    //printf("teste->schedule_type: %d\n",teste->schedule_type);
 
                 }
                 else if (i == 2){
@@ -602,6 +596,7 @@ void *reader_pipe(void* arg){
           }
           strcpy(queue[i].stat.t_reception,asctime (timeinfo));
           strcpy(queue[i].requested_file,req_buf);
+          strcpy(queue[i].stat.file_name,req_buf);
           queue[i].socket=socket;
           printf("Posiçao do pedido na queue:%d",i);
           printf("DEBUG:Printing queue:%s\n",queue[i].requested_file);
@@ -834,9 +829,12 @@ void execute_script(int socket) {
         linha[len-1]='\0';
       }
     }
+ 
   void appendEstatisticas(char linha[])
   {
     FILE *f;
+    struct stat sb;
+    int fd;
     char barra_n[2]={'\n','\0'};
     if((f=fopen("server.log","a"))!=NULL)
     {
@@ -844,7 +842,27 @@ void execute_script(int socket) {
       fputs(barra_n,f);
     }
     fclose(f);
+
+    fd = open ("server.log", O_RDONLY);
+      
+   if(fd == -1)
+      return 1;
+
+   if(fstat(fd, &sb) == -1)
+      return 1;
+      
+    ficheiro_mapeado = mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
+
+    if(ficheiro_mapeado == MAP_FAILED) {
+        perror ("mmap");
+        return 1;
+    }
+    if(close(fd)==-1) {
+        perror ("close");
+        return 1;
+    }
   }
+  
 
 
   //sinal que imprime as estatisticas

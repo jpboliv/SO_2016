@@ -91,6 +91,7 @@ double total_t;
 
 
 
+
 /*semaforos*/
 sem_t *mutex; 
 sem_t *empty;

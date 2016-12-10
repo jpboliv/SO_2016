@@ -20,6 +20,18 @@
       queue = malloc(sizeof(request)*2*teste->n_threads);
       signal(SIGINT,catch_ctrlc);
 
+
+      /*SEMÁFOROS*/
+
+      sem_unlink("BUFFER_MUTEX");
+      buffer_mutex = sem_open("BUFFER_MUTEX", O_CREAT|O_EXCL, 0700, 1);
+
+      sem_unlink("EMPTY");
+      empty = sem_open("EMPTY", O_CREAT|O_EXCL, 0700, teste->n_threads);
+
+      sem_unlink("FULL");
+      full = sem_open("FULL", O_CREAT|O_EXCL, 0700, 0);
+
       if(fork()==0){
         printf("Criar processos de gestor de configurações: \n");
         //gestorConfig();
@@ -38,7 +50,10 @@
 
               } 
               printf("%s-%d\n", "Criar processos de gestor de estatísticas: " ,getpid());
-              signal(SIGUSR1,catch_sighup_estat); //SIGUSR1 ISTO SERVE PARA IMPRIMIR
+
+              signal(SIGUSR1, catch_sigusr1);
+              signal(SIGUSR2, catch_sigusr2);
+
               while(1){
                //Receive an answer of message type 1.
                   if (msgrcv(msqid, &tmp, SIZE_BUF, 1, 0) < 0)
@@ -72,7 +87,10 @@
         exit(1);
 
       // Server requests
-      
+      int optval = 1;
+      if(setsockopt(socket_conn, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1) {
+       exit(1); 
+   }
       while (1)
       {
         // Accept connection on socket
@@ -95,13 +113,13 @@
       */
         // Terminate connection with client
         //close(new_conn);
-        sem_post(&cond);        
+        sem_post(full);        
       }
     }
 
     void init(){
       //alocar espaço de memoria partilhada
-      if((shmid = shmget(IPC_PRIVATE, sizeof(statistic), IPC_CREAT|0777)) < 0 ) {
+      if((shmid = shmget(IPC_PRIVATE, sizeof(statistic*), IPC_CREAT|0777)) < 0 ) {
         perror("Error at shmget\n");
       }
 
@@ -110,17 +128,21 @@
         perror("Error at shmat\n");
       }
 
-    memShared->pedidosAceites=0;
+      memShared->pedidosAceites=0;
     memShared->pedidosRecusados=0;
       /*le ficheiro */
+      //sem_wait(mutex);
       carregarConfig();
-
+      //sem_post(mutex);
       /*criação da pool de threads */
       pthread_t scheduler;
       pthread_t pipe;
-      sem_init(&mutex, 0, 1);
-      sem_init(&cond, 0, 0);
+      //sem_init(&mutex, 0, 1);
+      //sem_init(&cond, 0, 0);
 
+      sem_unlink("MUTEX");
+      mutex = sem_open("MUTEX", O_CREAT|O_EXCL, 0700, 1);
+      
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");
       }
@@ -161,14 +183,14 @@ kill_master=0;
       flag=1;
       
       close(socket_conn);
-      for( i =0; i < teste->n_threads; i++){
+      /*for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
-      }
-      /*for(i=0;i<teste->n_threads;i++){
+      }*/
+      for(i=0;i<teste->n_threads;i++){
           pthread_cancel(child_threads[i]);
           printf("A fechar a thread %d \n", i);
         }
-    */
+    
       //pthread_cancel(masterthread);  
       //pthread_exit(&masterthread);
       //pthread_exit(&child_threads);
@@ -178,7 +200,7 @@ kill_master=0;
         //limpar estatsticas
       shmdt(memShared);
       if(shmctl(shmid, IPC_RMID, NULL) < 0){
-        printf("Error at shmctl\n");
+        perror("Error at shmctl\n");
       }
       
       exit(0);
@@ -189,7 +211,9 @@ kill_master=0;
       //int numthreads;
       int i;
       free(child_threads);
+      sem_wait(mutex);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
+      sem_post(mutex);
       for(i =0; i <teste->n_threads; i++){
         if(pthread_create(&child_threads[i], NULL, workerThread, (void *)i )!=0) {
           printf("Error at pthread_create 1\n");
@@ -394,8 +418,8 @@ void *reader_pipe(void* arg){
     //sigaddset (&block_ctrlc, SIGINT); 
     while(1)
     {
-
-      
+      sem_wait(full);
+      sem_wait(buffer_mutex);
 
       if(flag==1){
         pthread_exit(NULL);
@@ -403,10 +427,10 @@ void *reader_pipe(void* arg){
       }
       if(queue_aux>0){
       sigprocmask (SIG_BLOCK, &block_ctrlc, NULL);
-
+/*
       sem_wait(&cond);
       sem_wait(&mutex);
-
+*/
       n=queue_aux-1;
 
       if(strstr(queue[n].requested_file,".gz"))
@@ -417,6 +441,9 @@ void *reader_pipe(void* arg){
             memShared->pedidosAceites++;
             printf("Executou o ficheiro comprimido!\n");
             memShared->n_pedidos_dinamicos++;
+            end_t = clock();
+            total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+            memShared->time_pedidos_dinamicos = memShared->time_pedidos_dinamicos + (double)total_t;
           }
 
           else
@@ -431,6 +458,9 @@ void *reader_pipe(void* arg){
           send_page(queue[n].socket);
           memShared->pedidosAceites++;
           memShared->n_pedidos_estaticos++;
+          end_t = clock();
+          total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+          memShared->time_pedidos_estaticos = memShared->time_pedidos_estaticos + (double)total_t;
         }
         
         if(queue[n].t_request==1){
@@ -475,8 +505,11 @@ void *reader_pipe(void* arg){
           strcpy(queue[n].requested_file,"");
           queue_aux--;
           
+          sem_post(buffer_mutex);
+          sem_post(empty);
+
           close(new_conn);
-          sem_post(&mutex);
+          //sem_post(&mutex);
           
           sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
       #if DEBUG
@@ -501,6 +534,7 @@ void *reader_pipe(void* arg){
         
         int j = 0;
       teste = malloc(sizeof (configs));
+      //sem_wait(mutex);
         if((fp = fopen("config.txt", "r")) == NULL){
             perror("Erro a ler o ficheiro.\n");
         }
@@ -546,7 +580,7 @@ void *reader_pipe(void* arg){
             }
 
             fclose(fp);
-
+           // sem_post(mutex);
         }
     }
 
@@ -600,6 +634,7 @@ void *reader_pipe(void* arg){
           strcpy(queue[i].requested_file,req_buf);
           strcpy(queue[i].stat.file_name,req_buf);
           queue[i].socket=socket;
+          start_t = clock();
           printf("Posiçao do pedido na queue:%d",i);
           printf("DEBUG:Printing queue:%s\n",queue[i].requested_file);
           printf("DEBUG:Printing file type:%d\n 1- Estatico 2- Dina \n",queue[i].t_request);
@@ -847,23 +882,43 @@ void execute_script(int socket) {
     fd = open ("server.log", O_RDONLY);
       
    if(fd == -1)
-      return 1;
+      return ;
 
    if(fstat(fd, &sb) == -1)
-      return 1;
+      return ;
       
     ficheiro_mapeado = mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
     if(ficheiro_mapeado == MAP_FAILED) {
         perror ("mmap");
-        return 1;
+        return ;
     }
     if(close(fd)==-1) {
         perror ("close");
-        return 1;
+        return ;
     }
   }
   
+  void catch_sigusr1(int sig){
+
+      if((memShared->n_pedidos_estaticos == 0) && (memShared->n_pedidos_dinamicos == 0)){
+        printf("Nao houve pedidos ainda\n");
+      }else{
+        printf("Numero de pedidos estaticos servidos:%d\n",memShared->n_pedidos_estaticos );
+      printf("Numero de pedidos comprimidos servidos:%d\n",memShared->n_pedidos_dinamicos);
+      printf("Tempo medio para servir um pedido a conteúdo estático não comprimido:%f segundos \n",(double)(memShared->time_pedidos_estaticos/(double)memShared->n_pedidos_estaticos + 0));
+      printf("Tempo médio para servir um pedido a conteúdo estático comprimido:%f segundos \n", (double)(memShared->time_pedidos_dinamicos/(double)memShared->n_pedidos_dinamicos + 0)); 
+      }
+         
+    }
+
+    void catch_sigusr2(int sig){
+       memShared->n_pedidos_estaticos = 0;
+       memShared->n_pedidos_dinamicos = 0 ;
+       memShared->n_pedidos_estaticos = 0;
+       memShared->time_pedidos_dinamicos = 0;
+       printf("Reset à informação estatística agregada \n");
+    }
 
 
   //sinal que imprime as estatisticas

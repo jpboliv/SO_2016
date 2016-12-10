@@ -66,6 +66,10 @@ void organize_static();
 void organize_dynamic();
 void organize_fifo();
 
+void catch_sigusr1(int sig); 
+
+void catch_sigusr2(int sig); 
+
 
 
 char buf[SIZE_BUF];
@@ -82,10 +86,17 @@ char *ficheiro_mapeado;
 int shmid;
 pthread_t *child_threads;
 
+clock_t start_t, end_t;
+double total_t;
+
 
 
 /*semaforos*/
-sem_t mutex, cond;
+sem_t *mutex; 
+sem_t *empty;
+sem_t *full;
+sem_t *buffer_mutex;
+sem_t cond;
 int queue_aux =0; //número de elementos no buffer
 int flag=0;
 int kill_pipe=0;
@@ -119,6 +130,8 @@ typedef struct{
   int pedidosAceites;
   int n_pedidos_estaticos;
   int n_pedidos_dinamicos;
+  double time_pedidos_estaticos;
+double time_pedidos_dinamicos;
 }statistic;
 statistic *memShared;
 

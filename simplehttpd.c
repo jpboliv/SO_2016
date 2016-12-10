@@ -98,7 +98,7 @@
         //close(new_conn);
          
 
-          sem_post(&cond);
+        sem_post(&cond);
         
       }
     }
@@ -163,7 +163,7 @@ kill_master=0;
       kill_pipe=1;
       flag=1;
       
-
+      close(socket_conn);
       for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
       }
@@ -183,7 +183,7 @@ kill_master=0;
       if(shmctl(shmid, IPC_RMID, NULL) < 0){
         printf("Error at shmctl\n");
       }
-      close(socket_conn);
+      
       exit(0);
     }
 
@@ -245,7 +245,7 @@ void *reader_pipe(void* arg){
   }
 
 //criaçao de variveis aux
-          char *search = " + \n";
+    char *search = " + \n";
         
         //fim de variaveis aux
 
@@ -401,8 +401,8 @@ void *reader_pipe(void* arg){
         pthread_exit(NULL);
         return(NULL);
       }
-      sigprocmask (SIG_BLOCK, &block_ctrlc, NULL);
       if(queue_aux>0){
+      sigprocmask (SIG_BLOCK, &block_ctrlc, NULL);
 
       sem_wait(&cond);
       sem_wait(&mutex);
@@ -432,7 +432,7 @@ void *reader_pipe(void* arg){
           memShared->pedidosAceites++;
           memShared->n_pedidos_estaticos++;
         }
-        close(queue[n].socket);
+        
         if(queue[n].t_request==1){
           strcpy(queue[n].stat.request_type,"estatico");
           printf("%s\n", queue[n].stat.request_type);
@@ -474,15 +474,17 @@ void *reader_pipe(void* arg){
           queue[n].t_request=0;
           strcpy(queue[n].requested_file,"");
           queue_aux--;
+          
+          close(new_conn);
           sem_post(&mutex);
-
-
+          
+          sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
       #if DEBUG
         printf("->queue_aux: %d\n",queue_aux);
       #endif
         }
         else{}
-          sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
+          
     }
 
   }
@@ -607,7 +609,6 @@ void *reader_pipe(void* arg){
       }
         return;
     }
-
 
     // Send message header (before html page) to client
     void send_header(int socket)

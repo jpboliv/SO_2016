@@ -128,6 +128,7 @@ typedef struct{
   int socket;
   int id;
   statistic stat;
+  
 }request;
 
 request *queue;

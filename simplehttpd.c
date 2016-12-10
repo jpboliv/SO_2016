@@ -25,6 +25,7 @@
         //gestorConfig();
         exit(0);
       }
+
       if(fork()==0){
 
               int msgflg = IPC_CREAT | 0666;
@@ -79,10 +80,8 @@
           printf("Error accepting connection\n");
           exit(1);
         }
-
         // Identify new client
         identify(new_conn);
-
         // Process request
         get_request(new_conn);
 
@@ -96,10 +95,7 @@
       */
         // Terminate connection with client
         //close(new_conn);
-         
-
-        sem_post(&cond);
-        
+        sem_post(&cond);        
       }
     }
 
@@ -157,6 +153,7 @@ kill_master=0;
     void catch_ctrlc(int sig){
 
       printf("Server terminating\n");
+      printf("Pedidos aceites %d" ,memShared->pedidosAceites);
       //testing cleanup
       int i;
       kill_master=1;
@@ -176,7 +173,7 @@ kill_master=0;
       //pthread_exit(&masterthread);
       //pthread_exit(&child_threads);
       free(child_threads);
-
+      free(queue);
       
         //limpar estatsticas
       shmdt(memShared);
@@ -261,11 +258,11 @@ void *reader_pipe(void* arg){
         char *token1;
         char *token2;
         
-          char aux[1024];
+        char aux[1024];
         char buf[MAX_BUF];
-          read(fd, &buf, sizeof(buf));
-          //fgets(buf,MAX_BUF, fd);
-          strcpy(aux,buf);
+        read(fd, &buf, sizeof(buf));
+        //fgets(buf,MAX_BUF, fd);
+        strcpy(aux,buf);
 
           if(strcmp(previous,buf)==0){
           }
@@ -392,9 +389,9 @@ void *reader_pipe(void* arg){
     char num[10];
     key = 1234;
     printf("estou a ser criada%d\n",n_pool);
-    sigset_t block_sigusr1;
-    sigemptyset (&block_ctrlc); 
-    sigaddset (&block_ctrlc, SIGINT); 
+    sigset_t block_ctrlc;
+    //sigemptyset (&block_ctrlc); 
+    //sigaddset (&block_ctrlc, SIGINT); 
     while(1)
     {
 

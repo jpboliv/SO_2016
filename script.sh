@@ -1,8 +1,8 @@
 #!/bin/bash
-max=300
+max=100
 ip=localhost
 filename=index.html
-port=5000
+port=3000
 tempo=2
 
 

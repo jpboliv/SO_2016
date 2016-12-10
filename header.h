@@ -77,6 +77,7 @@ struct tm * timeinfo;
 time_t timeServer;
 struct tm * timeServInfo;
 sigset_t block_ctrlc;
+
 char *ficheiro_mapeado;
 int shmid;
 pthread_t *child_threads;
@@ -128,7 +129,6 @@ typedef struct{
   int socket;
   int id;
   statistic stat;
-  
 }request;
 
 request *queue;

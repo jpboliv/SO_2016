@@ -20,6 +20,18 @@
       queue = malloc(sizeof(request)*2*teste->n_threads);
       signal(SIGINT,catch_ctrlc);
 
+
+      /*SEMÁFOROS*/
+
+      sem_unlink("BUFFER_MUTEX");
+      buffer_mutex = sem_open("BUFFER_MUTEX", O_CREAT|O_EXCL, 0700, 1);
+
+      sem_unlink("EMPTY");
+      empty = sem_open("EMPTY", O_CREAT|O_EXCL, 0700, teste->n_threads);
+
+      sem_unlink("FULL");
+      full = sem_open("FULL", O_CREAT|O_EXCL, 0700, 0);
+
       if(fork()==0){
         printf("Criar processos de gestor de configurações: \n");
         //gestorConfig();
@@ -95,13 +107,13 @@
       */
         // Terminate connection with client
         //close(new_conn);
-        sem_post(&cond);        
+        sem_post(full);        
       }
     }
 
     void init(){
       //alocar espaço de memoria partilhada
-      if((shmid = shmget(IPC_PRIVATE, sizeof(statistic), IPC_CREAT|0777)) < 0 ) {
+      if((shmid = shmget(IPC_PRIVATE, sizeof(statistic*), IPC_CREAT|0777)) < 0 ) {
         perror("Error at shmget\n");
       }
 
@@ -110,17 +122,21 @@
         perror("Error at shmat\n");
       }
 
-    memShared->pedidosAceites=0;
-    memShared->pedidosRecusados=0;
+      memShared->pedidosAceites=0;
+      memShared->pedidosRecusados=0;
       /*le ficheiro */
+      sem_wait(mutex);
       carregarConfig();
-
+      sem_post(mutex);
       /*criação da pool de threads */
       pthread_t scheduler;
       pthread_t pipe;
-      sem_init(&mutex, 0, 1);
-      sem_init(&cond, 0, 0);
+      //sem_init(&mutex, 0, 1);
+      //sem_init(&cond, 0, 0);
 
+      sem_unlink("MUTEX");
+      mutex = sem_open("MUTEX", O_CREAT|O_EXCL, 0700, 1);
+      
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");
       }
@@ -161,14 +177,15 @@ kill_master=0;
       flag=1;
       
       close(socket_conn);
+      /*
       for( i =0; i < teste->n_threads; i++){
         pthread_join(child_threads[i], NULL);
-      }
-      /*for(i=0;i<teste->n_threads;i++){
+      }*/
+      for(i=0;i<teste->n_threads;i++){
           pthread_cancel(child_threads[i]);
           printf("A fechar a thread %d \n", i);
         }
-    */
+    
       //pthread_cancel(masterthread);  
       //pthread_exit(&masterthread);
       //pthread_exit(&child_threads);
@@ -189,7 +206,9 @@ kill_master=0;
       //int numthreads;
       int i;
       free(child_threads);
+      sem_wait(mutex);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
+      sem_post(mutex);
       for(i =0; i <teste->n_threads; i++){
         if(pthread_create(&child_threads[i], NULL, workerThread, (void *)i )!=0) {
           printf("Error at pthread_create 1\n");
@@ -386,7 +405,7 @@ void *reader_pipe(void* arg){
     key_t key;
     int n;
     msgbuf tmp;
-    char num[10];
+    //char num[10];
     key = 1234;
     printf("estou a ser criada%d\n",n_pool);
     sigset_t block_ctrlc;
@@ -394,8 +413,8 @@ void *reader_pipe(void* arg){
     //sigaddset (&block_ctrlc, SIGINT); 
     while(1)
     {
-
-      
+      sem_wait(full);
+      sem_wait(buffer_mutex);
 
       if(flag==1){
         pthread_exit(NULL);
@@ -403,10 +422,10 @@ void *reader_pipe(void* arg){
       }
       if(queue_aux>0){
       sigprocmask (SIG_BLOCK, &block_ctrlc, NULL);
-
+/*
       sem_wait(&cond);
       sem_wait(&mutex);
-
+*/
       n=queue_aux-1;
 
       if(strstr(queue[n].requested_file,".gz"))
@@ -475,8 +494,11 @@ void *reader_pipe(void* arg){
           strcpy(queue[n].requested_file,"");
           queue_aux--;
           
+          sem_post(buffer_mutex);
+          sem_post(empty);
+
           close(new_conn);
-          sem_post(&mutex);
+          //sem_post(&mutex);
           
           sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
       #if DEBUG
@@ -501,6 +523,7 @@ void *reader_pipe(void* arg){
         
         int j = 0;
       teste = malloc(sizeof (configs));
+      sem_wait(mutex);
         if((fp = fopen("config.txt", "r")) == NULL){
             perror("Erro a ler o ficheiro.\n");
         }
@@ -546,7 +569,7 @@ void *reader_pipe(void* arg){
             }
 
             fclose(fp);
-
+            sem_post(mutex);
         }
     }
 
@@ -847,20 +870,20 @@ void execute_script(int socket) {
     fd = open ("server.log", O_RDONLY);
       
    if(fd == -1)
-      return 1;
+      return ;
 
    if(fstat(fd, &sb) == -1)
-      return 1;
+      return ;
       
     ficheiro_mapeado = mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
     if(ficheiro_mapeado == MAP_FAILED) {
         perror ("mmap");
-        return 1;
+        return ;
     }
     if(close(fd)==-1) {
         perror ("close");
-        return 1;
+        return ;
     }
   }
   

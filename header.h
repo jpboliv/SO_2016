@@ -84,8 +84,13 @@ pthread_t *child_threads;
 
 
 
+
 /*semaforos*/
-sem_t mutex, cond;
+sem_t *mutex; 
+sem_t *empty;
+sem_t *full;
+sem_t *buffer_mutex;
+sem_t cond;
 int queue_aux =0; //número de elementos no buffer
 int flag=0;
 int kill_pipe=0;

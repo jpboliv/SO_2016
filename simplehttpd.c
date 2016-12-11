@@ -398,7 +398,7 @@ void *reader_pipe(void* arg){
 
           else
           {
-            cannot_execute((int)socket);
+            cannot_execute(queue[n].socket);
             memShared->pedidosRecusados++;
             printf("Não executou\n");
           }
@@ -806,35 +806,74 @@ void execute_script(int socket) {
  
   void appendEstatisticas(char linha[])
   {
-    FILE *f;
-    struct stat sb;
+    
     int fd;
-    char barra_n[2]={'\n','\0'};
-    if((f=fopen("server.log","a"))!=NULL)
-    {
-      fputs(linha,f);
-      fputs(barra_n,f);
-    }
-    fclose(f);
+    char aux[400];
+    int result;
+    char *map;  /* mmapped array of char's */
+    int offset=0;
 
-    fd = open ("server.log", O_RDONLY);
+    
+    /* Open a file for writing.
+     *  - Creating the file if it doesn't exist.
+     *  - Truncating it to 0 size if it already exists. (not really needed)
+     *
+     */
+    fd = open("server.log", O_RDWR | O_CREAT , 0777);
+    if (fd == -1) {
+    perror("Error opening file for writing");
+    exit(EXIT_FAILURE);
+    }
+    /* Stretch the file size to the size of the (mmapped) array of ints
+     */
+    pageSize = lseek(fd,0L,SEEK_END);
+      sprintf(aux,"%s\n",linha);
+      pageSize+=strlen(aux);
+    result = lseek(fd, pageSize-1, SEEK_SET);
+
+    if (result == -1) {
+    close(fd);
+    perror("Error calling lseek() to 'stretch' the file");
+    exit(EXIT_FAILURE);
+    }
+    
+    /*  writte at the end of the file to
+     * have the file actually have the new size.
+     * 
+     *
+     */
+    result = write(fd, " ", 1);
+    if (result != 1) {
+        close(fd);
+        perror("Error writing last byte of the file");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Now the file is ready to be mmapped.
+     */
+    map = mmap((caddr_t)0, pageSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+    if (map == MAP_FAILED) {
+    close(fd);
+    perror("Error mmapping the file");
+    exit(EXIT_FAILURE);
+    }
+    /* Now write to the file as if it were memory .
+     */
       
-   if(fd == -1)
-      return ;
+    offset+=strlen(map);
+     sprintf(map+offset,"%s\n",linha);
 
-   if(fstat(fd, &sb) == -1)
-      return ;
-      
-    ficheiro_mapeado = mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
-
-    if(ficheiro_mapeado == MAP_FAILED) {
-        perror ("mmap");
-        return ;
+    /* free the mmapped memory
+     */
+    if (munmap((caddr_t)0, pageSize) == -1) {
+    perror("Error un-mmapping the file");
+    /* Decide here whether to close(fd) and exit() or not. Depends... */
     }
-    if(close(fd)==-1) {
-        perror ("close");
-        return ;
-    }
+    /* Un-mmaping doesn't close the file, so we still need to do that.
+     */
+    
+    close(fd);
   }
   
   void catch_sigusr1(int sig){

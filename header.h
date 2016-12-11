@@ -89,7 +89,7 @@ pthread_t *child_threads;
 clock_t start_t, end_t;
 double total_t;
 
-
+int pageSize=0;
 
 
 /*semaforos*/

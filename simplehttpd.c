@@ -73,12 +73,6 @@
               }
               exit(0);
       }
-      // Verify number of arguments
-      /*if (argc!=2) {
-        printf("Usage: %s <port>\n",argv[0]);
-        exit(1);
-      }*/
-      //port=atoi(argv[1]);
       port=teste->server_port;
       printf("Listening for HTTP requests on port %d\n",port);
 
@@ -102,17 +96,6 @@
         identify(new_conn);
         // Process request
         get_request(new_conn);
-
-        /*
-        // Verify if request is for a page or script
-        if(!strncmp(req_buf,CGI_EXPR,strlen(CGI_EXPR)))
-          execute_script(new_conn);
-        else
-          // Search file with html page and send to client
-          //send_page(new_conn);
-      */
-        // Terminate connection with client
-        //close(new_conn);
         sem_post(full);        
       }
     }
@@ -137,9 +120,6 @@
       /*criação da pool de threads */
       pthread_t scheduler;
       pthread_t pipe;
-      //sem_init(&mutex, 0, 1);
-      //sem_init(&cond, 0, 0);
-
       sem_unlink("MUTEX");
       mutex = sem_open("MUTEX", O_CREAT|O_EXCL, 0700, 1);
       
@@ -149,8 +129,6 @@
       if(pthread_create(&pipe, NULL, reader_pipe, NULL) != 0){
         perror("Error at creating master thread\n");
       }
-      //printf("NUmeros de thread:%d \n Tipo de coiso:%s \n Server-Porto:%d \n File1: %s \n File2:%s",teste->n_threads,teste->scheduling,teste->server_port,teste->file_list[0],teste->file_list[1]);
-      //exit(0);
     }
 
     void destroy_thread(){
@@ -158,7 +136,7 @@
       flag=1;
       kill_master=1;
       for( i =0; i < teste->n_threads; i++){
-        pthread_join(child_threads[i], NULL);
+        pthread_cancel(child_threads[i]);
       }
            
     }
@@ -166,34 +144,24 @@ void create_threads(){
 flag = 0;
 kill_master=0;
       pthread_t scheduler;
-     // pthread_cancel(masterthread);
    if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
             perror("Error at creating master thread\n");
       }
 }
-    //TODO: aguardar que a  lista de pedidos seja tratada
     void catch_ctrlc(int sig){
 
       printf("Server terminating\n");
       printf("Pedidos aceites %d" ,memShared->pedidosAceites);
-      //testing cleanup
       int i;
       kill_master=1;
       kill_pipe=1;
       flag=1;
       
       close(socket_conn);
-      /*for( i =0; i < teste->n_threads; i++){
-        pthread_join(child_threads[i], NULL);
-      }*/
       for(i=0;i<teste->n_threads;i++){
           pthread_cancel(child_threads[i]);
           printf("A fechar a thread %d \n", i);
         }
-    
-      //pthread_cancel(masterthread);  
-      //pthread_exit(&masterthread);
-      //pthread_exit(&child_threads);
       free(child_threads);
       free(queue);
       
@@ -207,8 +175,6 @@ kill_master=0;
     }
 
     void *masterthread(void* arg){
-      //int n_threads=1;
-      //int numthreads;
       int i;
       free(child_threads);
       sem_wait(mutex);
@@ -224,17 +190,6 @@ kill_master=0;
         pthread_exit(NULL);
         return(NULL);
       }
-        /*if(numthreads != teste->n_threads){
-          numthreads=teste->n_threads;
-          free(child_threads);
-          child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
-          for(i =0; i < numthreads; i++){
-            if(pthread_create(&child_threads[i], NULL,workerThread, (void *)i )!= 0){
-              perror("Error at creating thread\n");
-            }
-          }
-        }*/
-
 
         //SCHEDULE DA queue
         if(queue_aux > 0){ //quer dizer que existem elementos na queue
@@ -285,7 +240,6 @@ void *reader_pipe(void* arg){
         char aux[1024];
         char buf[MAX_BUF];
         read(fd, &buf, sizeof(buf));
-        //fgets(buf,MAX_BUF, fd);
         strcpy(aux,buf);
 
           if(strcmp(previous,buf)==0){
@@ -427,10 +381,7 @@ void *reader_pipe(void* arg){
       }
       if(queue_aux>0){
       sigprocmask (SIG_BLOCK, &block_ctrlc, NULL);
-/*
-      sem_wait(&cond);
-      sem_wait(&mutex);
-*/
+
       n=queue_aux-1;
 
       if(strstr(queue[n].requested_file,".gz"))
@@ -471,8 +422,6 @@ void *reader_pipe(void* arg){
           strcpy(queue[n].stat.request_type,"dinamico");
           printf("%s\n", queue[n].stat.request_type);
         }
-        queue[n].stat.thread_ans=n_pool;
-        //strcpy(queue[n].stat.request_type,queue[n].requested_file);
         time ( &rawtime );
         timeinfo = localtime ( &rawtime );
         strcpy(queue[n].stat.t_sent,asctime (timeinfo));
@@ -509,7 +458,6 @@ void *reader_pipe(void* arg){
           sem_post(empty);
 
           close(new_conn);
-          //sem_post(&mutex);
           
           sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
       #if DEBUG
@@ -534,7 +482,6 @@ void *reader_pipe(void* arg){
         
         int j = 0;
       teste = malloc(sizeof (configs));
-      //sem_wait(mutex);
         if((fp = fopen("config.txt", "r")) == NULL){
             perror("Erro a ler o ficheiro.\n");
         }
@@ -555,23 +502,17 @@ void *reader_pipe(void* arg){
                     token = strtok(NULL, search);
                       
                       teste->schedule_type = 1;
-
-                    //printf("teste->schedule_type: %d\n",teste->schedule_type);
-
                 }
                 else if (i == 2){
                     token = strtok(buffer, search);
                     token = strtok(NULL, search);
                     teste->n_threads = atoi(token);
-                    //printf("%s",token);
                 }
                 else if (i == 3){
                     token = strtok(buffer, search);
                     token = strtok(NULL, search);
-                    //printf("%s",token);
                     while(token!=NULL) {
                         strcpy(teste->file_list[j], token);
-                        //printf("%s",token);
                         j++;
                         len_file_list = j;
                         token = strtok(NULL, search);
@@ -580,7 +521,6 @@ void *reader_pipe(void* arg){
             }
 
             fclose(fp);
-           // sem_post(mutex);
         }
     }
 
@@ -664,7 +604,6 @@ void *reader_pipe(void* arg){
 void execute_script(int socket) {
   FILE *in;
   char buf[512];
-  //char * cmd; cmd = "";
   sprintf(buf_tmp,"zcat htdocs/%s",req_buf);
 
 
@@ -926,8 +865,6 @@ void execute_script(int socket) {
   {
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
-    //printf("Tempo Inicial do servidor: %s\n", horaServidor);
     printf("Hora actual do servidor: %s\n", asctime(timeinfo));
-    //printf("Pedidos Recusados: %d\n",memShared->pedidosRecusados);
     printf("Pedidos Aceites: %d\n", memShared->pedidosAceites);
   }

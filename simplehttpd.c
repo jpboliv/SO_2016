@@ -181,7 +181,7 @@ kill_master=0;
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
       sem_post(mutex);
       for(i =0; i <teste->n_threads; i++){
-        if(pthread_create(&child_threads[i], NULL, workerThread, (void *)i )!=0) {
+        if(pthread_create(&child_threads[i], NULL, workerThread, NULL)!=0) {
           printf("Error at pthread_create 1\n");
         }
       }
@@ -358,7 +358,7 @@ void *reader_pipe(void* arg){
     }
     return -1;
   }
-  void *workerThread(int n_pool)
+  void *workerThread()
   {
     int msqid;
     key_t key;
@@ -366,7 +366,6 @@ void *reader_pipe(void* arg){
     msgbuf tmp;
     //char num[10];
     key = 1234;
-    printf("estou a ser criada%d\n",n_pool);
     sigset_t block_ctrlc;
     //sigemptyset (&block_ctrlc); 
     //sigaddset (&block_ctrlc, SIGINT); 

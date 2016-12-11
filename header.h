@@ -51,7 +51,7 @@ void cannot_execute(int socket);
 void retira_paragrafo(char *linha);
 void appendEstatisticas(char linha[]);
 void catch_sighup_estat(int sig); 
-void *workerThread(int n_pool);
+void *workerThread();
 void init();
 void *reader_pipe();
 void cleanup();

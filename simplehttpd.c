@@ -32,11 +32,6 @@
       sem_unlink("FULL");
       full = sem_open("FULL", O_CREAT|O_EXCL, 0700, 0);
 
-      if(fork()==0){
-        printf("Criar processos de gestor de configurações: \n");
-        //gestorConfig();
-        exit(0);
-      }
 
       if(fork()==0){
 
@@ -67,7 +62,9 @@
                   }
                   else
                   {
+                    pthread_cond_wait(&queue->escreve, &queue->mutex_alves);
                     appendEstatisticas(tmp.mtext);
+                    pthread_mutex_unlock(&queue->mutex_alves);
                     strcpy(tmp.mtext,"");
                   }
               }
@@ -96,7 +93,7 @@
         identify(new_conn);
         // Process request
         get_request(new_conn);
-        sem_post(full);        
+        //sem_post(full);        
       }
     }
 
@@ -112,7 +109,7 @@
       }
 
       memShared->pedidosAceites=0;
-    memShared->pedidosRecusados=0;
+      memShared->pedidosRecusados=0;
       /*le ficheiro */
       //sem_wait(mutex);
       carregarConfig();
@@ -177,32 +174,38 @@ kill_master=0;
     void *masterthread(void* arg){
       int i;
       free(child_threads);
-      sem_wait(mutex);
+      //sem_wait(mutex);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
-      sem_post(mutex);
+      //sem_post(mutex);
       for(i =0; i <teste->n_threads; i++){
         if(pthread_create(&child_threads[i], NULL, workerThread, NULL)!=0) {
           printf("Error at pthread_create 1\n");
         }
       }
      while(1){
+
       if(kill_master==1){
         pthread_exit(NULL);
         return(NULL);
       }
-
+        pthread_cond_wait(&queue->workerRequested, &queue->mutex_alves);
         //SCHEDULE DA queue
         if(queue_aux > 0){ //quer dizer que existem elementos na queue
           if(teste->schedule_type == 2 && queue_aux > 1){ // PRIORIDADE ESTÁTICA
             organize_static();
+            pthread_mutex_unlock(&queue->mutex_alves);
           }
           else if(teste->schedule_type == 3 && queue_aux > 1){ //PRIORIDADE DINÂMICOS
             organize_dynamic();
+            pthread_mutex_unlock(&queue->mutex_alves);
           }
         }
         else if(teste->schedule_type == 1 && queue_aux > 1){ 
           organize_fifo();
+          pthread_mutex_unlock(&queue->mutex_alves);
         }
+        pthread_mutex_unlock(&queue->mutex_alves);
+        pthread_cond_signal(&queue->procede);
       }
     }
 
@@ -371,9 +374,9 @@ void *reader_pipe(void* arg){
     //sigaddset (&block_ctrlc, SIGINT); 
     while(1)
     {
-      sem_wait(full);
-      sem_wait(buffer_mutex);
-
+      //sem_wait(full);
+      //sem_wait(buffer_mutex);
+      pthread_cond_wait(&queue->procede, &queue->mutex_alves);
       if(flag==1){
         pthread_exit(NULL);
         return(NULL);
@@ -394,6 +397,7 @@ void *reader_pipe(void* arg){
             end_t = clock();
             total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
             memShared->time_pedidos_dinamicos = memShared->time_pedidos_dinamicos + (double)total_t;
+            pthread_mutex_unlock(&queue->mutex_alves);
           }
 
           else
@@ -411,6 +415,7 @@ void *reader_pipe(void* arg){
           end_t = clock();
           total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
           memShared->time_pedidos_estaticos = memShared->time_pedidos_estaticos + (double)total_t;
+          pthread_mutex_unlock(&queue->mutex_alves);
         }
         
         if(queue[n].t_request==1){
@@ -453,8 +458,8 @@ void *reader_pipe(void* arg){
           strcpy(queue[n].requested_file,"");
           queue_aux--;
           
-          sem_post(buffer_mutex);
-          sem_post(empty);
+          //sem_post(buffer_mutex);
+          //sem_post(empty);
 
           close(new_conn);
           
@@ -578,6 +583,7 @@ void *reader_pipe(void* arg){
           printf("DEBUG:Printing queue:%s\n",queue[i].requested_file);
           printf("DEBUG:Printing file type:%d\n 1- Estatico 2- Dina \n",queue[i].t_request);
           printf("DEBUG:Printing hora de recepção do pedido %s\n",queue[i].stat.t_reception);
+          pthread_cond_signal(&queue->workerRequested);
           return;
         }
       }

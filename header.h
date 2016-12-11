@@ -143,9 +143,14 @@ typedef struct{
   int socket;
   int id;
   statistic stat;
+  pthread_mutex_t mutex_alves;
+  pthread_cond_t procede, workerRequested, escreve;
+
 }request;
 
 request *queue;
+
+
 
 /*TODO: VER ISTO -> ESTRUTURA DO FREITAS*/
 typedef struct{

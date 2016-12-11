@@ -1,17 +1,17 @@
+#include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #define PIPE_NAME "np_client_server"
 void write_pipe(char *aux);
 void menu();
 int fd;
 int main(){
-    char * myfifo = "/tmp/myfifo2";
-    /* write "Hi" to the FIFO */
-
     
+
     if ((fd = open(PIPE_NAME, O_WRONLY)) < 0) {
     perror("Cannot open pipe for writing: ");
     exit(0);

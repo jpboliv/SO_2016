@@ -20,19 +20,6 @@
       queue = malloc(sizeof(request)*2*teste->n_threads);
       signal(SIGINT,catch_ctrlc);
 
-
-      /*SEMÁFOROS*/
-
-      sem_unlink("BUFFER_MUTEX");
-      buffer_mutex = sem_open("BUFFER_MUTEX", O_CREAT|O_EXCL, 0700, 1);
-
-      sem_unlink("EMPTY");
-      empty = sem_open("EMPTY", O_CREAT|O_EXCL, 0700, teste->n_threads);
-
-      sem_unlink("FULL");
-      full = sem_open("FULL", O_CREAT|O_EXCL, 0700, 0);
-
-
       if(fork()==0){
 
               int msgflg = IPC_CREAT | 0666;
@@ -99,6 +86,7 @@
 
     void init(){
       //alocar espaço de memoria partilhada
+
       if((shmid = shmget(IPC_PRIVATE, sizeof(statistic*), IPC_CREAT|0777)) < 0 ) {
         perror("Error at shmget\n");
       }

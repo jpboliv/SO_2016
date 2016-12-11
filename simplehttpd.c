@@ -62,9 +62,9 @@
                   }
                   else
                   {
-                    pthread_cond_wait(&queue->escreve, &queue->mutex_alves);
+                    //pthread_cond_wait(&queue->escreve, &queue->mutex_alves);
                     appendEstatisticas(tmp.mtext);
-                    pthread_mutex_unlock(&queue->mutex_alves);
+                    //pthread_mutex_unlock(&queue->mutex_alves);
                     strcpy(tmp.mtext,"");
                   }
               }
@@ -93,7 +93,7 @@
         identify(new_conn);
         // Process request
         get_request(new_conn);
-        //sem_post(full);        
+               
       }
     }
 
@@ -111,14 +111,10 @@
       memShared->pedidosAceites=0;
       memShared->pedidosRecusados=0;
       /*le ficheiro */
-      //sem_wait(mutex);
       carregarConfig();
-      //sem_post(mutex);
       /*criação da pool de threads */
       pthread_t scheduler;
       pthread_t pipe;
-      sem_unlink("MUTEX");
-      mutex = sem_open("MUTEX", O_CREAT|O_EXCL, 0700, 1);
       
       if(pthread_create(&scheduler, NULL, masterthread, NULL) != 0){
         perror("Error at creating master thread\n");
@@ -148,7 +144,6 @@ kill_master=0;
     void catch_ctrlc(int sig){
 
       printf("Server terminating\n");
-      printf("Pedidos aceites %d" ,memShared->pedidosAceites);
       int i;
       kill_master=1;
       kill_pipe=1;
@@ -174,9 +169,7 @@ kill_master=0;
     void *masterthread(void* arg){
       int i;
       free(child_threads);
-      //sem_wait(mutex);
       child_threads = malloc((int)teste->n_threads*sizeof(pthread_t));
-      //sem_post(mutex);
       for(i =0; i <teste->n_threads; i++){
         if(pthread_create(&child_threads[i], NULL, workerThread, NULL)!=0) {
           printf("Error at pthread_create 1\n");
@@ -252,7 +245,6 @@ void *reader_pipe(void* arg){
 
             if(strcmp(token1,"1")==0){
                 token2 = strtok(NULL,search);
-                printf("sou o patricio:%s\n",token2);
                 if(strcmp(token2,"1")==0){
                   printf("Scheduling Normal\n");
                   teste->schedule_type = 1;// TODO - N TEMOS A FUNÇAO PARA ORGANIZAR PEDIDOS DO TIPO 1
@@ -272,9 +264,6 @@ void *reader_pipe(void* arg){
             else if(strcmp(token1,"2")==0){
               if(queue_aux==0){
                 token2 = strtok(NULL,search);
-                //printf("sou o patricio:%s\n",token2);
-                printf("Numero de threads novo:%s\n",token2);
-
                   int jota = atoi(token2);
                 if(teste->n_threads == jota){
                   printf("A pool ja tem %d threads\n",jota );
@@ -284,13 +273,13 @@ void *reader_pipe(void* arg){
                   destroy_thread();
                   teste->n_threads = jota;
                   create_threads();//SUBSTITUI O NUMERO THREADS ANTIGA
+                  printf("Numero de threads novo:%s\n",token2);
                   strcpy(previous,buf);
                 }
               }else{printf("i'm busy dumbass");}
             }
             else  if(strcmp(token1,"3")==0){
                 token2 = strtok(NULL,search);
-                //printf("sou o patricio:%s\n",token2);
                 printf("Novo ficheiro permitido: %s\n",token2);
                 strcpy(teste->file_list[len_file_list], token2); //LIMPA A LISTA DE FICHEIROS ANTIGA? ADICIONA À ANTIGA? SE SIM PRECISO DE SABER ONDE (PRECISO DE SABER O VALOR DE J)
                 len_file_list++;
@@ -374,8 +363,6 @@ void *reader_pipe(void* arg){
     //sigaddset (&block_ctrlc, SIGINT); 
     while(1)
     {
-      //sem_wait(full);
-      //sem_wait(buffer_mutex);
       pthread_cond_wait(&queue->procede, &queue->mutex_alves);
       if(flag==1){
         pthread_exit(NULL);
@@ -457,10 +444,6 @@ void *reader_pipe(void* arg){
           queue[n].t_request=0;
           strcpy(queue[n].requested_file,"");
           queue_aux--;
-          
-          //sem_post(buffer_mutex);
-          //sem_post(empty);
-
           close(new_conn);
           
           sigprocmask (SIG_UNBLOCK, &block_ctrlc, NULL);
@@ -498,7 +481,6 @@ void *reader_pipe(void* arg){
                     token = strtok(buffer, search);
                     token = strtok(NULL, search);
                     teste -> server_port = atoi(token);
-                    //printf("%s",token);
                 }
                 else if (i == 1){
 
@@ -534,7 +516,6 @@ void *reader_pipe(void* arg){
     {
       int i,j;
       int found_get;
-      printf("DEBUG:Sou o socket:%d\n",socket);
       found_get=0;
       queue_aux++;
       while ( read_line(socket,SIZE_BUF) > 0 ) {
@@ -554,7 +535,6 @@ void *reader_pipe(void* arg){
         printf("Request from client without a GET\n");
         exit(1);
       }
-      printf("SOU EU A PAGINA:%s\n",req_buf);
       // If no particular page is requested then we consider htdocs/index.html
       if(!strlen(req_buf))
         sprintf(req_buf,"index.html");
@@ -578,12 +558,12 @@ void *reader_pipe(void* arg){
           strcpy(queue[i].requested_file,req_buf);
           strcpy(queue[i].stat.file_name,req_buf);
           queue[i].socket=socket;
-          start_t = clock();
+          start_t = clock();/*
           printf("Posiçao do pedido na queue:%d",i);
           printf("DEBUG:Printing queue:%s\n",queue[i].requested_file);
           printf("DEBUG:Printing file type:%d\n 1- Estatico 2- Dina \n",queue[i].t_request);
           printf("DEBUG:Printing hora de recepção do pedido %s\n",queue[i].stat.t_reception);
-          pthread_cond_signal(&queue->workerRequested);
+          */pthread_cond_signal(&queue->workerRequested);
           return;
         }
       }
@@ -830,7 +810,7 @@ void execute_script(int socket) {
     perror("Error opening file for writing");
     exit(EXIT_FAILURE);
     }
-    /* Stretch the file size to the size of the (mmapped) array of ints
+    /* Stretch the file size to the size of the (mmapped) 
      */
     pageSize = lseek(fd,0L,SEEK_END);
       sprintf(aux,"%s\n",linha);
@@ -887,7 +867,7 @@ void execute_script(int socket) {
       if((memShared->n_pedidos_estaticos == 0) && (memShared->n_pedidos_dinamicos == 0)){
         printf("Nao houve pedidos ainda\n");
       }else{
-        printf("Numero de pedidos estaticos servidos:%d\n",memShared->n_pedidos_estaticos );
+      printf("Numero de pedidos estaticos servidos:%d\n",memShared->n_pedidos_estaticos );
       printf("Numero de pedidos comprimidos servidos:%d\n",memShared->n_pedidos_dinamicos);
       printf("Tempo medio para servir um pedido a conteúdo estático não comprimido:%f segundos \n",(double)(memShared->time_pedidos_estaticos/(double)memShared->n_pedidos_estaticos + 0));
       printf("Tempo médio para servir um pedido a conteúdo estático comprimido:%f segundos \n", (double)(memShared->time_pedidos_dinamicos/(double)memShared->n_pedidos_dinamicos + 0)); 
@@ -904,11 +884,4 @@ void execute_script(int socket) {
     }
 
 
-  //sinal que imprime as estatisticas
-  void catch_sighup_estat(int sig)
-  {
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
-    printf("Hora actual do servidor: %s\n", asctime(timeinfo));
-    printf("Pedidos Aceites: %d\n", memShared->pedidosAceites);
-  }
+ 

@@ -1,3 +1,3 @@
 # SO_2016
 
-PROJECTO DE SO 2016, SE ESTÁS A VER ISTO E NÃO ÉS O KOALA, SAI JÁ DAQUI!
+College project - Operative Systems 2016;
